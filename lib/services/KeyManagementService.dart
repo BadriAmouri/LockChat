@@ -6,6 +6,11 @@ import 'encryption_service.dart';
 import 'decryption_service.dart';
 import 'package:pointycastle/asymmetric/api.dart';
 import 'package:pointycastle/asn1.dart'; // Add this for ASN.1 parsing
+import 'package:pointycastle/pointycastle.dart' as pc;
+import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pointycastle/pointycastle.dart' as pc;
+import 'package:pointycastle/asymmetric/api.dart';
+import 'package:basic_utils/basic_utils.dart';
 
 class KeyManagementService {
   final decryptionService = DecryptionService();
@@ -17,7 +22,7 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
   try {
     // ✅ Check if key rotation is needed
     final Uri checkRotationUrl = Uri.parse(
-      'http://192.168.1.10:5000/api/encryption/shouldRotateKey/$senderId/$recipientId',
+      'http://192.168.1.22:5000/api/encryption/shouldRotateKey/$senderId/$recipientId',
     );
 
     final response = await http.get(checkRotationUrl);
@@ -33,17 +38,19 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
         print("Generated AES Key: ${base64Encode(aesKey)}");
 
         // 🔑 2. Fetch public keys for sender & recipient
-        final RSAPublicKey recipientPublicKey = await fetchRecipientPublicKey(recipientId);
-        final RSAPublicKey senderPublicKey = await fetchSenderPublicKey(senderId);
+        final ECPublicKey recipientPublicKey = await fetchRecipientPublicKey(recipientId);
+        final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
         print("Fetched Public Keys for sender and recipient.");
+        final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey();
 
         // 🔒 3. Encrypt AES key for both sender & recipient
-        final String encryptedKeyForRecipient = encryptionService.encryptAESKeyForRecipient(aesKey, recipientPublicKey);
-        final String encryptedKeyForSender = encryptionService.encryptAESKeyForRecipient(aesKey, senderPublicKey);
+        final Map<String, String> encryptedKeyForboth =  encryptionService.encryptAESKeyForSenderAndRecipient(aesKey,senderPrivateKey,senderPublicKey, recipientPublicKey);
+        final String? encryptedKeyForRecipient =encryptedKeyForboth['encrypted_key_for_recipient'];
+        final String? encryptedKeyForSender = encryptedKeyForboth['encrypted_key_for_sender'];
         print("Encrypted AES Key for both sender and recipient.");
 
         // 🔄 4. Store encrypted keys in backend
-        final Uri storeKeyUrl = Uri.parse('http://192.168.1.10:5000/api/encryption/storeEncryptedKey');
+        final Uri storeKeyUrl = Uri.parse('http://192.168.1.22:5000/api/encryption/storeEncryptedKey');
 
         final storeKeyResponse = await http.post(
           storeKeyUrl,
@@ -64,7 +71,7 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
       } else {
         // ✅ Fetch existing encryption key
         final Uri fetchKeyUrl = Uri.parse(
-          'http://192.168.1.10:5000/api/encryption/getEncryptedKey',
+          'http://192.168.1.22:5000/api/encryption/getEncryptedKey',
         ).replace(queryParameters: {
           'userId': senderId.toString(),
           'isSender': 'true',
@@ -78,10 +85,11 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
           final String encryptedKey = responseData['key'];
 
           print("Encrypted Key Retrieved: $encryptedKey");
-
+       
           // 🔑 Decrypt AES key using sender's private key
-          final RSAPrivateKey senderPrivateKey = await fetchSenderPrivateKey();
-          final Uint8List aesKey = decryptionService.decryptAESKey(encryptedKey, senderPrivateKey);
+          final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
+          final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey();
+          final Uint8List aesKey = decryptionService.decryptAESKeyForSender(encryptedKey, senderPrivateKey,senderPublicKey);
 
           print("Decrypted AES Key: ${base64Encode(aesKey)}");
 
@@ -103,8 +111,27 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
 
 
 
+/* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS*/
+Future<ECPrivateKey> fetchReceipentPrivateKey() async {
+  /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
+  final String? privateKeyPem =
+      "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgBqdF0J9xGmbwM9xN\nKpvRGanygz/kb9c05gOV7X8nI1OhRANCAAQt6hrWyuEuLrI6WnMAzhyvL2QC3nzf\nwnuV9F6Pohfav6TeipIhY9PLwP4UAEPxI72LP/ArBdhuevsggMV8Lyc3\n-----END PRIVATE KEY-----\n";
+  
+  if (privateKeyPem == null) {
+    throw Exception("Private key not found in secure storage.");
+  }
 
- Future<RSAPrivateKey> fetchSenderPrivateKey() async {
+  try {
+    final ECPrivateKey ecPrivateKey = CryptoUtils.ecPrivateKeyFromPem(privateKeyPem);
+    print("[DEBUG] Parsed EC Private Key: $ecPrivateKey");
+    return ecPrivateKey;
+  } catch (e) {
+    throw Exception("Failed to parse EC private key: $e");
+  }
+}
+
+/* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS */
+Future<ECPrivateKey> fetchSenderPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
   final String? privateKeyPem =
       "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Wt4rIfs7XglgsxI\nFtwDrgzk69TFQ6O2Db9d+c3OG1ShRANCAATcbRPvGmRtPjMVZeaAPhxC26s35iCG\nTOPCzjLK/YNvZ41L1kmAIj0q0prCPO0RuGIm7i7fsmJyaFTFn+prr47G\n-----END PRIVATE KEY-----\n";
@@ -112,176 +139,38 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
   if (privateKeyPem == null) {
     throw Exception("Private key not found in secure storage.");
   }
-  
-  final privateKey = parseRSAPrivateKeyFromPem(privateKeyPem);
-  print("[DEBUG] Fetched Private Key: $privateKey");
-  return privateKey;
-}
 
-Future<RSAPublicKey> fetchSenderPublicKey(int senderId) async {
-  final response = await http.get(
-    Uri.parse('http://192.168.1.10:5000/api/encryption/users/$senderId/publicKey'),
-  );
-
-  if (response.statusCode == 200) {
-    final String publicKeyPem = jsonDecode(response.body)['publicKey'];
-    final publicKey = parseRSAPublicKeyFromPem(publicKeyPem);
-    print("[DEBUG] Fetched Sender's Public Key: $publicKey");
-    return publicKey;
-  } else {
-    throw Exception("Failed to fetch sender's public key");
+  try {
+    final ECPrivateKey ecPrivateKey = CryptoUtils.ecPrivateKeyFromPem(privateKeyPem);
+    print("[DEBUG] Parsed EC Private Key: $ecPrivateKey");
+    return ecPrivateKey;
+  } catch (e) {
+    throw Exception("Failed to parse EC private key: $e");
   }
 }
 
-Future<RSAPublicKey> fetchRecipientPublicKey(int recipientId) async {
+Future<ECPublicKey> fetchRecipientPublicKey(int recipientId) async {
   final response = await http.get(
-    Uri.parse('http://192.168.1.10:5000/api/encryption/users/$recipientId/publicKey'),
+    Uri.parse('http://192.168.1.22:5000/api/encryption/users/$recipientId/publicKey'),
   );
 
   if (response.statusCode == 200) {
     final String publicKeyPem = jsonDecode(response.body)['publicKey'];
-    final publicKey = parseRSAPublicKeyFromPem(publicKeyPem);
-    print("[DEBUG] Fetched Recipient's Public Key: $publicKey");
-    return publicKey;
+    
+    // Debugging: Print the received public key
+    print("Fetched Public Key PEM:\n$publicKeyPem");
+
+    try {
+      final ECPublicKey ecPublicKey = CryptoUtils.ecPublicKeyFromPem(publicKeyPem);
+      print("Parsed EC Public Key: $ecPublicKey");
+      return ecPublicKey;
+    } catch (e) {
+      throw Exception("Failed to parse EC public key: $e");
+    }
   } else {
     throw Exception("Failed to fetch recipient's public key");
   }
 }
-
- 
-/// Converts ASN1Integer to BigInt
-BigInt _decodeBigInt(ASN1Integer asn1Integer) {
-  final Uint8List bytes = asn1Integer.valueBytes ?? Uint8List(0); // Ensure it's never null
-
-  if (bytes.isEmpty) {
-    throw Exception("ASN1Integer has no value bytes");
-  }
-
-  return BigInt.parse(
-    bytes.map((e) => e.toRadixString(16).padLeft(2, '0')).join(),
-    radix: 16,
-  );
-}
- 
-
-
-  RSAPrivateKey parseRSAPrivateKeyFromPem(String pem) {
-    try {
-      // Remove PEM headers and footers
-      final pemCleaned = pem
-          .replaceAll("-----BEGIN PRIVATE KEY-----", "")
-          .replaceAll("-----END PRIVATE KEY-----", "")
-          .replaceAll("-----BEGIN RSA PRIVATE KEY-----", "")
-          .replaceAll("-----END RSA PRIVATE KEY-----", "")
-          .replaceAll("\n", "")
-          .trim();
-
-      // Decode base64 content
-      final Uint8List keyBytes = base64Decode(pemCleaned);
-
-      // Parse ASN.1 format
-      final asn1Parser = ASN1Parser(keyBytes);
-      final ASN1Sequence? topLevelSeq = asn1Parser.nextObject() as ASN1Sequence?;
-
-      if (topLevelSeq == null || topLevelSeq.elements == null || topLevelSeq.elements!.isEmpty) {
-        throw Exception("Invalid ASN.1 format for RSA private key");
-      }
-
-      // RSA private keys can be in two formats:
-      // - PKCS#1 (traditional format)
-      // - PKCS#8 (modern format, wrapped in an additional ASN.1 structure)
-
-      // If it is PKCS#1 format, it starts directly with the modulus
-      if (topLevelSeq.elements!.length >= 9) {
-        return _parsePKCS1PrivateKey(topLevelSeq);
-      }
-
-      // If it is PKCS#8 format, the private key is wrapped inside
-      final ASN1BitString? privateKeyBitString = topLevelSeq.elements!.last as ASN1BitString?;
-      if (privateKeyBitString == null) {
-        throw Exception("Invalid ASN.1 format: Missing private key bit string");
-      }
-
-      final ASN1Parser privateKeyParser = ASN1Parser(privateKeyBitString.valueBytes);
-      final ASN1Sequence? privateKeySeq = privateKeyParser.nextObject() as ASN1Sequence?;
-
-      if (privateKeySeq == null || privateKeySeq.elements == null || privateKeySeq.elements!.length < 9) {
-        throw Exception("Invalid ASN.1 format: Missing RSA private key components");
-      }
-
-      return _parsePKCS1PrivateKey(privateKeySeq);
-    } catch (e) {
-      throw Exception("Failed to parse RSA private key: $e");
-    }
-  }
-
-/// Parses an RSA private key from PKCS#1 format
-RSAPrivateKey _parsePKCS1PrivateKey(ASN1Sequence privateKeySeq) {
-  final BigInt modulus = _decodeBigInt(privateKeySeq.elements![1] as ASN1Integer);
-  final BigInt publicExponent = _decodeBigInt(privateKeySeq.elements![2] as ASN1Integer);
-  final BigInt privateExponent = _decodeBigInt(privateKeySeq.elements![3] as ASN1Integer);
-  final BigInt p = _decodeBigInt(privateKeySeq.elements![4] as ASN1Integer);
-  final BigInt q = _decodeBigInt(privateKeySeq.elements![5] as ASN1Integer);
-
-  return RSAPrivateKey(modulus, privateExponent, p, q);
-}
-
- 
-
-RSAPublicKey parseRSAPublicKeyFromPem(String pem) {
-  try {
-    // Remove PEM headers and footers
-    final pemCleaned = pem
-        .replaceAll("-----BEGIN PUBLIC KEY-----", "")
-        .replaceAll("-----END PUBLIC KEY-----", "")
-        .replaceAll("\n", "")
-        .trim();
-
-    // Decode the base64 content
-    final Uint8List keyBytes = base64Decode(pemCleaned);
-
-    // Parse ASN.1 format
-    final asn1Parser = ASN1Parser(keyBytes);
-    final ASN1Sequence? topLevelSeq = asn1Parser.nextObject() as ASN1Sequence?;
-
-    if (topLevelSeq == null || topLevelSeq.elements == null || topLevelSeq.elements!.length < 2) {
-      throw Exception("Invalid ASN.1 format");
-    }
-
-    final ASN1BitString? publicKeyBitString = topLevelSeq.elements![1] as ASN1BitString?;
-
-    if (publicKeyBitString == null) {
-      throw Exception("Invalid ASN.1 format: Missing public key bit string");
-    }
-
-    // Parse the public key sequence
-    final ASN1Parser publicKeyParser = ASN1Parser(publicKeyBitString.valueBytes);
-    final ASN1Sequence? publicKeySeq = publicKeyParser.nextObject() as ASN1Sequence?;
-
-    if (publicKeySeq == null || publicKeySeq.elements == null || publicKeySeq.elements!.length < 2) {
-      throw Exception("Invalid ASN.1 format: Missing modulus and exponent");
-    }
-
-    // Extract modulus (n) and exponent (e)
-    final ASN1Integer? modulusASN1 = publicKeySeq.elements![0] as ASN1Integer?;
-    final ASN1Integer? exponentASN1 = publicKeySeq.elements![1] as ASN1Integer?;
-
-    if (modulusASN1 == null || exponentASN1 == null) {
-      throw Exception("Invalid ASN.1 format: Missing RSA key components");
-    }
-
-    final BigInt modulus = _decodeBigInt(modulusASN1);
-    final BigInt exponent = _decodeBigInt(exponentASN1);
-
-    // Create RSAPublicKey object
-    return RSAPublicKey(modulus, exponent);
-  } catch (e) {
-    throw Exception("Failed to parse RSA public key: $e");
-  }
-}
-
-
-
 
 
 

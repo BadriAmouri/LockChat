@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'views/screens/chat_list_screen.dart';
 import 'views/screens/add_contact_screen.dart';
-import 'views/screens/chat_screen.dart';
+import 'views/screens/chat_screen_test.dart';
 import 'dart:convert';
 import 'package:encrypt/encrypt.dart';
 import 'package:pointycastle/export.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/chat_item.dart';
 import '../widgets/search_bar_widget.dart';
 import '../theme/colors.dart';
-import 'chat_screen.dart';
+import 'chat_screen_test.dart';
 class ChatListScreen extends StatelessWidget {
   const ChatListScreen({super.key});
 
