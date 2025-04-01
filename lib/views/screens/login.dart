@@ -16,19 +16,16 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   
   // Error messages
   String? _usernameError;
-  String? _emailError;
   String? _passwordError;
 
   @override
   void dispose() {
     _usernameController.dispose();
-    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -40,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // Reset errors
     setState(() {
       _usernameError = null;
-      _emailError = null;
       _passwordError = null;
     });
     
@@ -51,20 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       isValid = false;
       
-    }
-    
-    // Email validation
-    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (_emailController.text.isEmpty) {
-      setState(() {
-        _emailError = 'Email is required';
-      });
-      isValid = false;
-    } else if (!emailRegExp.hasMatch(_emailController.text)) {
-      setState(() {
-        _emailError = 'Please enter a valid email address';
-      });
-      isValid = false;
     }
     
     // Password validation
@@ -190,26 +172,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               vertical: 20,
                             ),
                             errorText: _usernameError,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Email field
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            hintText: 'example@email.com',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 20,
-                            ),
-                            errorText: _emailError,
                           ),
                         ),
                         
