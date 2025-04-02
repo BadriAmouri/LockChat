@@ -8,12 +8,12 @@ class ContactCard extends StatelessWidget {
   final bool isNetworkImage;
 
   const ContactCard({
-    Key? key,
+    super.key,
     required this.name,
     required this.phone,
     required this.image,
     this.isNetworkImage = false, // Default to false (for assets)
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

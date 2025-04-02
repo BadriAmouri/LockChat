@@ -114,7 +114,7 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
 /* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS*/
 Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
-  final String? privateKeyPem =
+  final String privateKeyPem =
       "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgBqdF0J9xGmbwM9xN\nKpvRGanygz/kb9c05gOV7X8nI1OhRANCAAQt6hrWyuEuLrI6WnMAzhyvL2QC3nzf\nwnuV9F6Pohfav6TeipIhY9PLwP4UAEPxI72LP/ArBdhuevsggMV8Lyc3\n-----END PRIVATE KEY-----\n";
   
   if (privateKeyPem == null) {
@@ -133,7 +133,7 @@ Future<ECPrivateKey> fetchReceipentPrivateKey() async {
 /* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS */
 Future<ECPrivateKey> fetchSenderPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
-  final String? privateKeyPem =
+  final String privateKeyPem =
       "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Wt4rIfs7XglgsxI\nFtwDrgzk69TFQ6O2Db9d+c3OG1ShRANCAATcbRPvGmRtPjMVZeaAPhxC26s35iCG\nTOPCzjLK/YNvZ41L1kmAIj0q0prCPO0RuGIm7i7fsmJyaFTFn+prr47G\n-----END PRIVATE KEY-----\n";
   
   if (privateKeyPem == null) {

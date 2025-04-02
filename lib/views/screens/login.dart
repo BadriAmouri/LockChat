@@ -1,5 +1,4 @@
 // views/screens/login_screen.dart
-// views/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../widgets/wave_clipper.dart';
@@ -7,7 +6,7 @@ import 'signup.dart';
 import 'chat_screen_test.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

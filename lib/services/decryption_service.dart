@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:pointycastle/asymmetric/api.dart';
 import 'package:pointycastle/export.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 

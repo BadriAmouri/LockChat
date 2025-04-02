@@ -5,7 +5,7 @@ import '../widgets/custom_text_field.dart';
 import '../theme/colors.dart';
 
 class AddContactsScreen extends StatelessWidget {
-   AddContactsScreen({Key? key}) : super(key: key);
+   AddContactsScreen({super.key});
 
   final List<Map<String, String>> contacts = [
     {

@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
-import 'views/screens/chat_list_screen.dart';
-import 'views/screens/add_contact_screen.dart';
-import 'views/screens/chat_screen_test.dart';
-import 'views/screens/login.dart';
-import 'views/screens/signup.dart';
-import 'dart:convert';
-import 'package:encrypt/encrypt.dart';
-import 'package:pointycastle/export.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'views/screens/incoming_requests.dart';
 
 
 
@@ -27,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: SignupScreen(),
+      home: ChatRequestListScreen(),
     );
   }
 }

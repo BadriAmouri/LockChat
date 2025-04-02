@@ -1,13 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:pointycastle/asymmetric/api.dart';
 import 'package:pointycastle/export.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:pointycastle/export.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
 class EncryptionService {
   final _storage = const FlutterSecureStorage();
   final int aesKeySize = 32; // 256-bit AES key

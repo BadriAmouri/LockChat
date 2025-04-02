@@ -21,6 +21,8 @@ import 'package:basic_utils/basic_utils.dart';
 class ChatScreen extends StatelessWidget {
   final EncryptionService _encryptionService = EncryptionService();
   final KeyManagementService _keymanagementService=KeyManagementService();
+
+  ChatScreen({super.key});
   void _sendMessage() async {
     // Generate AES Key
     Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(9, 10);
