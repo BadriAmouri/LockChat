@@ -23,7 +23,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
   ];
 
   void _handleConfirm(String requestId) {
-    // Add logic to accept the request
+    //logic to accept the request
     setState(() {
       _requests.removeWhere((request) => request['id'] == requestId);
     });
@@ -31,13 +31,13 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Request accepted!'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.deepPurple,
       ),
     );
   }
 
   void _handleDecline(String requestId) {
-    // Add logic to decline the request
+    //logic to decline the request
     setState(() {
       _requests.removeWhere((request) => request['id'] == requestId);
     });
@@ -66,7 +66,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
       ),
       body: Column(
         children: [
-          // Purple wave with PWA header
+          // Purple wave top decoration
           Stack(
             children: [
               ClipPath(

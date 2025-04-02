@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  
+
   // Error messages
   String? _usernameError;
   String? _passwordError;
@@ -28,26 +28,25 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-  
+
   // Validation methods
   bool _validateInputs() {
     bool isValid = true;
-    
+
     // Reset errors
     setState(() {
       _usernameError = null;
       _passwordError = null;
     });
-    
+
     // Username validation
     if (_usernameController.text.isEmpty) {
       setState(() {
         _usernameError = 'Username is required';
       });
       isValid = false;
-      
     }
-    
+
     // Password validation
     if (_passwordController.text.isEmpty) {
       setState(() {
@@ -60,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       isValid = false;
     }
-    
+
     return isValid;
   }
 
@@ -106,9 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Login On Your Account
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -123,16 +122,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Login tab indicator
                   Row(
                     children: [
-                      Icon(
-                        Icons.login_rounded,
-                        color: AppColors.darkpurple,
-                      ),
+                      Icon(Icons.login_rounded, color: AppColors.darkpurple),
                       const SizedBox(width: 10),
                       const Text(
                         'Login',
@@ -144,14 +140,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                  
+
                   // Purple line
                   Container(
                     height: 3,
                     color: AppColors.darkpurple,
                     margin: const EdgeInsets.only(top: 8, bottom: 24),
                   ),
-                  
+
                   Form(
                     key: _formKey,
                     child: Column(
@@ -173,9 +169,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             errorText: _usernameError,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Password field
                         TextField(
                           controller: _passwordController,
@@ -192,8 +188,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             errorText: _passwordError,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword 
-                                    ? Icons.visibility_off 
+                                _obscurePassword
+                                    ? Icons.visibility_off
                                     : Icons.visibility,
                                 color: Colors.grey,
                               ),
@@ -208,16 +204,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 100),
-                  
+
                   // Next Step button
                   Center(
                     child: ElevatedButton(
                       onPressed: () {
                         if (_validateInputs()) {
                           // Login successful, navigate to next screen
-                          
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Login successful!'),
@@ -226,12 +222,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
 
                           Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatScreen(),
-                              ),
-                            );
-                          
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatScreen(),
+                            ),
+                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -259,9 +254,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Don't have account? Sign Up
                   Center(
                     child: Row(
