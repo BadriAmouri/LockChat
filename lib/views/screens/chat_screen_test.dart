@@ -155,7 +155,7 @@ Future<void> testDecryption({
       appBar: AppBar(title: Text("Chat")),
       body: Center(
         child: ElevatedButton(
-          onPressed: _sendMessage,
+          onPressed: _testDecryption,
           child: Text("Send Encrypted Message"),
         ),
       ),
