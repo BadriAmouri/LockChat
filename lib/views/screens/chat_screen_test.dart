@@ -21,13 +21,11 @@ import 'package:basic_utils/basic_utils.dart';
 class ChatScreen extends StatelessWidget {
   final EncryptionService _encryptionService = EncryptionService();
   final KeyManagementService _keymanagementService=KeyManagementService();
-
-  ChatScreen({super.key});
   void _sendMessage() async {
     // Generate AES Key
-    Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(15, 10,'douaa','testuser12345678');
+    Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(9, 10);
     // Encrypt Message
-    String message = "Testing LOCAL STORAGE";
+    String message = "YAA RABII TEMCHIII!!!!!!!!";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
     print("Encrypted Message: ${encryptedData['encryptedMessage']}");
     print("IV: ${encryptedData['iv']}");
@@ -40,7 +38,7 @@ class ChatScreen extends StatelessWidget {
 
     // Send encrypted message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "15",
+      senderId: "9",
       recipientId: "10",
       chatroomId: "1",
       encryptedMessage: encryptedData['encryptedMessage']!,
@@ -108,13 +106,13 @@ Future<void> testDecryption({
       encryptedMessage, senderAESKey, iv,
     );
     print("Decrypted Message by Sender: $decryptedMessageSender");
-    
+
     // Decrypt AES Key for Recipient
     Uint8List recipientAESKey = decryptionService.decryptAESKeyForRecipient(
       encryptedKeyforrec, recipientPrivateKey, senderPublicKey,
     );
     print("Recipient Decrypted AES Key: $recipientAESKey");
-    print("### THE ERROR HAPPENED AFTER CALLING decryptAESKeyForRecipient ### ");
+
     // Decrypt Message as Recipient
     String decryptedMessageRecipient = decryptionService.decryptMessage(
       encryptedMessage, recipientAESKey, iv,
@@ -132,14 +130,14 @@ Future<void> testDecryption({
   void _testDecryption() async {
     try {
       // Fetch keys
-      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchSenderPrivateKey('douaa');
+      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchSenderPrivateKey();
       ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
-      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(15); // Sender's public key
+      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(9); // Sender's public key
       ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(10); // Recipient's public key
-      
+
       // Call testDecryption
       await testDecryption(
-        senderId: "15",
+        senderId: "9",
         recipientId: "10",
         senderPrivateKey: senderPrivateKey,
         recipientPrivateKey: recipientPrivateKey,
@@ -157,7 +155,7 @@ Future<void> testDecryption({
       appBar: AppBar(title: Text("Chat")),
       body: Center(
         child: ElevatedButton(
-          onPressed: _testDecryption,
+          onPressed: _sendMessage,
           child: Text("Send Encrypted Message"),
         ),
       ),
