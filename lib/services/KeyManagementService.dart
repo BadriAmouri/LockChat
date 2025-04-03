@@ -11,11 +11,11 @@ import 'package:pointycastle/asymmetric/api.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:pointycastle/asymmetric/api.dart';
 import 'package:basic_utils/basic_utils.dart';
-
+import 'package:pointycastle/pointycastle.dart'; 
 class KeyManagementService {
   final decryptionService = DecryptionService();
   final EncryptionService encryptionService = EncryptionService();
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  static final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
 
   
 Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
@@ -130,24 +130,24 @@ Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   }
 }
 
-/* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS */
-Future<ECPrivateKey> fetchSenderPrivateKey() async {
-  /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
-  final String? privateKeyPem =
-      "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Wt4rIfs7XglgsxI\nFtwDrgzk69TFQ6O2Db9d+c3OG1ShRANCAATcbRPvGmRtPjMVZeaAPhxC26s35iCG\nTOPCzjLK/YNvZ41L1kmAIj0q0prCPO0RuGIm7i7fsmJyaFTFn+prr47G\n-----END PRIVATE KEY-----\n";
-  
-  if (privateKeyPem == null) {
-    throw Exception("Private key not found in secure storage.");
-  }
+ Future<ECPrivateKey> fetchSenderPrivateKey(String username) async {
+    final String? privateKeyBase64 = await secureStorage.read(key: "privateKey_$username");
 
-  try {
-    final ECPrivateKey ecPrivateKey = CryptoUtils.ecPrivateKeyFromPem(privateKeyPem);
-    print("[DEBUG] Parsed EC Private Key: $ecPrivateKey");
-    return ecPrivateKey;
-  } catch (e) {
-    throw Exception("Failed to parse EC private key: $e");
+    if (privateKeyBase64 == null) {
+      throw Exception("Private key not found in secure storage for $username.");
+    }
+
+    try {
+      final String privateKeyHex = utf8.decode(base64Decode(privateKeyBase64));
+      final BigInt privateKeyValue = BigInt.parse(privateKeyHex, radix: 16);
+      final ECPrivateKey ecPrivateKey = ECPrivateKey(privateKeyValue, ECCurve_secp256r1());
+
+      print("[DEBUG] Parsed EC Private Key for $username: $ecPrivateKey");
+      return ecPrivateKey;
+    } catch (e) {
+      throw Exception("Failed to parse EC private key: $e");
+    }
   }
-}
 
 Future<ECPublicKey> fetchRecipientPublicKey(int recipientId) async {
   final response = await http.get(
