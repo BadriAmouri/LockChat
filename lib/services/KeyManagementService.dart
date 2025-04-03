@@ -11,14 +11,15 @@ import 'package:pointycastle/asymmetric/api.dart';
 import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:pointycastle/asymmetric/api.dart';
 import 'package:basic_utils/basic_utils.dart';
-
+import 'package:pointycastle/ecc/api.dart';
+import 'package:pointycastle/export.dart';
 class KeyManagementService {
   final decryptionService = DecryptionService();
   final EncryptionService encryptionService = EncryptionService();
-  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   
-Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
+Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId,String senderusername,String recipientusername) async {
   try {
     // ✅ Check if key rotation is needed
     final Uri checkRotationUrl = Uri.parse(
@@ -41,7 +42,7 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
         final ECPublicKey recipientPublicKey = await fetchRecipientPublicKey(recipientId);
         final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
         print("Fetched Public Keys for sender and recipient.");
-        final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey();
+        final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey(senderusername);
 
         // 🔒 3. Encrypt AES key for both sender & recipient
         final Map<String, String> encryptedKeyForboth =  encryptionService.encryptAESKeyForSenderAndRecipient(aesKey,senderPrivateKey,senderPublicKey, recipientPublicKey);
@@ -66,7 +67,7 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
         print("Store Key Response: ${storeKeyResponse.body}");
 
         // 🔐 5. Save AES key locally
-        await secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
+        await _secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
         return aesKey;
       } else {
         // ✅ Fetch existing encryption key
@@ -88,13 +89,13 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
        
           // 🔑 Decrypt AES key using sender's private key
           final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
-          final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey();
+          final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey(senderusername);
           final Uint8List aesKey = decryptionService.decryptAESKeyForSender(encryptedKey, senderPrivateKey,senderPublicKey);
 
           print("Decrypted AES Key: ${base64Encode(aesKey)}");
 
           // 🔐 Save AES key locally
-          await secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
+          await _secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
           return aesKey;
         } else {
           throw Exception("Failed to fetch existing encryption key. Server responded: ${existingKeyResponse.statusCode}");
@@ -111,8 +112,47 @@ Future<Uint8List> rotateKeyIfNeeded(int senderId, int recipientId) async {
 
 
 
-/* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS*/
-Future<ECPrivateKey> fetchReceipentPrivateKey() async {
+ /* /// Fetch recipient's private key from secure storage
+  static Future<ECPrivateKey> fetchRecipientPrivateKey(String username) async {
+    final String? privateKeyBase64 = await _secureStorage.read(key: "privateKey_$username");
+
+    if (privateKeyBase64 == null) {
+      throw Exception("Private key not found in secure storage for $username.");
+    }
+
+    try {
+      final String privateKeyHex = utf8.decode(base64Decode(privateKeyBase64));
+      final BigInt privateKeyValue = BigInt.parse(privateKeyHex, radix: 16);
+      final ECPrivateKey ecPrivateKey = ECPrivateKey(privateKeyValue, ECCurve_secp256r1());
+
+      print("[DEBUG] Parsed EC Private Key for $username: $ecPrivateKey");
+      return ecPrivateKey;
+    } catch (e) {
+      throw Exception("Failed to parse EC private key: $e");
+    }
+  }
+ */
+
+  /// Fetch sender's private key from secure storage
+  Future<ECPrivateKey> fetchSenderPrivateKey(String username) async {
+    final String? privateKeyBase64 = await _secureStorage.read(key: "privateKey_$username");
+
+    if (privateKeyBase64 == null) {
+      throw Exception("Private key not found in secure storage for $username.");
+    }
+
+    try {
+      final String privateKeyHex = utf8.decode(base64Decode(privateKeyBase64));
+      final BigInt privateKeyValue = BigInt.parse(privateKeyHex, radix: 16);
+      final ECPrivateKey ecPrivateKey = ECPrivateKey(privateKeyValue, ECCurve_secp256r1());
+
+      print("[DEBUG] Parsed EC Private Key for $username: $ecPrivateKey");
+      return ecPrivateKey;
+    } catch (e) {
+      throw Exception("Failed to parse EC private key: $e");
+    }
+  }
+  Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
   final String privateKeyPem =
       "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgBqdF0J9xGmbwM9xN\nKpvRGanygz/kb9c05gOV7X8nI1OhRANCAAQt6hrWyuEuLrI6WnMAzhyvL2QC3nzf\nwnuV9F6Pohfav6TeipIhY9PLwP4UAEPxI72LP/ArBdhuevsggMV8Lyc3\n-----END PRIVATE KEY-----\n";
@@ -124,30 +164,14 @@ Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   try {
     final ECPrivateKey ecPrivateKey = CryptoUtils.ecPrivateKeyFromPem(privateKeyPem);
     print("[DEBUG] Parsed EC Private Key: $ecPrivateKey");
+    print("[DEBUG] #######YEYYYY Parsed EC Private Key: ###### $ecPrivateKey");
     return ecPrivateKey;
   } catch (e) {
     throw Exception("Failed to parse EC private key: $e");
   }
 }
 
-/* STATIC DATA WAS USED NEED TO BE CHANGED BASED ON THE IMPLEMENTATION OF AUTH AND WHERE FATIMA STORED PRIVATE KEYS */
-Future<ECPrivateKey> fetchSenderPrivateKey() async {
-  /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
-  final String privateKeyPem =
-      "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Wt4rIfs7XglgsxI\nFtwDrgzk69TFQ6O2Db9d+c3OG1ShRANCAATcbRPvGmRtPjMVZeaAPhxC26s35iCG\nTOPCzjLK/YNvZ41L1kmAIj0q0prCPO0RuGIm7i7fsmJyaFTFn+prr47G\n-----END PRIVATE KEY-----\n";
-  
-  if (privateKeyPem == null) {
-    throw Exception("Private key not found in secure storage.");
-  }
 
-  try {
-    final ECPrivateKey ecPrivateKey = CryptoUtils.ecPrivateKeyFromPem(privateKeyPem);
-    print("[DEBUG] Parsed EC Private Key: $ecPrivateKey");
-    return ecPrivateKey;
-  } catch (e) {
-    throw Exception("Failed to parse EC private key: $e");
-  }
-}
 
 Future<ECPublicKey> fetchRecipientPublicKey(int recipientId) async {
   final response = await http.get(

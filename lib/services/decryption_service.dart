@@ -44,7 +44,9 @@ class DecryptionService {
     print("Derived AES Key for Recipient: \$derivedAESKey");
     
     final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key(derivedAESKey), mode: encrypt.AESMode.ecb));
+    print("encrypter defined successfully");
     final decryptedAESKey = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes));
+    
     print("Decrypted AES Key: \$decryptedAESKey");
     return Uint8List.fromList(decryptedAESKey);
   }

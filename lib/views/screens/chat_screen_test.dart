@@ -25,9 +25,9 @@ class ChatScreen extends StatelessWidget {
   ChatScreen({super.key});
   void _sendMessage() async {
     // Generate AES Key
-    Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(9, 10);
+    Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(15, 10,'douaa','testuser12345678');
     // Encrypt Message
-    String message = "I'm stuck in my brain again";
+    String message = "Testing LOCAL STORAGE";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
     print("Encrypted Message: ${encryptedData['encryptedMessage']}");
     print("IV: ${encryptedData['iv']}");
@@ -40,7 +40,7 @@ class ChatScreen extends StatelessWidget {
 
     // Send encrypted message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "9",
+      senderId: "15",
       recipientId: "10",
       chatroomId: "1",
       encryptedMessage: encryptedData['encryptedMessage']!,
@@ -108,13 +108,13 @@ Future<void> testDecryption({
       encryptedMessage, senderAESKey, iv,
     );
     print("Decrypted Message by Sender: $decryptedMessageSender");
-
+    
     // Decrypt AES Key for Recipient
     Uint8List recipientAESKey = decryptionService.decryptAESKeyForRecipient(
       encryptedKeyforrec, recipientPrivateKey, senderPublicKey,
     );
     print("Recipient Decrypted AES Key: $recipientAESKey");
-
+    print("### THE ERROR HAPPENED AFTER CALLING decryptAESKeyForRecipient ### ");
     // Decrypt Message as Recipient
     String decryptedMessageRecipient = decryptionService.decryptMessage(
       encryptedMessage, recipientAESKey, iv,
@@ -132,14 +132,14 @@ Future<void> testDecryption({
   void _testDecryption() async {
     try {
       // Fetch keys
-      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchSenderPrivateKey();
+      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchSenderPrivateKey('douaa');
       ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
-      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(9); // Sender's public key
+      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(15); // Sender's public key
       ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(10); // Recipient's public key
-
+      
       // Call testDecryption
       await testDecryption(
-        senderId: "9",
+        senderId: "15",
         recipientId: "10",
         senderPrivateKey: senderPrivateKey,
         recipientPrivateKey: recipientPrivateKey,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'views/screens/incoming_requests.dart';
-
+import 'views/screens/chat_screen_test.dart';
+import 'views/screens/signup.dart';
 
 
 void main() async  {
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: ChatRequestListScreen(),
+      home: ChatScreen(),
     );
   }
 }
