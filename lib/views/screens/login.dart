@@ -1,9 +1,9 @@
 // views/screens/login_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
-import '../widgets/wave_clipper.dart';
+import '../widgets/header.dart';
 import 'signup.dart';
-import 'chat_screen_test.dart';
+import 'two_factor_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -72,39 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Purple wave with PWA text
-            Stack(
-              children: [
-                ClipPath(
-                  clipper: WaveClipper(),
-                  child: Container(
-                    height: 300,
-                    color: AppColors.darkpurple.withOpacity(0.8),
-                  ),
-                ),
-                const Positioned(
-                  top: 80,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      'PWA',
-                      style: TextStyle(
-                        fontSize: 80,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(2, 2),
-                            blurRadius: 3,
-                            color: Colors.black12,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            HeaderWidget(text: "PWA"),
 
             const SizedBox(height: 20),
 
@@ -216,15 +184,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Login successful!'),
-                              backgroundColor: Colors.green,
+                              content: Text('verify your identity'),
+                              backgroundColor: AppColors.buttonColor,
                             ),
                           );
 
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ChatScreen(),
+                              builder:
+                                  (context) => TwoFactorAuthenticationScreen(),
                             ),
                           );
                         }
