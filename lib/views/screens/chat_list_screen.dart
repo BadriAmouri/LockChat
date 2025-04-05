@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/views/screens/chat_screen.dart';
 import '../widgets/chat_item.dart';
 import '../widgets/search_bar_widget.dart';
 import '../theme/colors.dart';
@@ -131,7 +132,7 @@ class ChatListScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         //maybe with the backendlogic we pass the id of the chat or smth 
-                        builder: (context) => ChatScreen(
+                        builder: (context) => ChatScreene(
 /*                           name: chat['name'],
                           imageUrl: chat['imageUrl'], */
                         ),

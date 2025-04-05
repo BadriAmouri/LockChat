@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/views/screens/chat_list_screen.dart';
 import 'views/screens/incoming_requests.dart';
 
 
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: ChatRequestListScreen(),
+      home: ChatListScreen(),
     );
   }
 }
