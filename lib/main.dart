@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/views/screens/chat_list_screen.dart';
+import 'views/screens/incoming_requests.dart';
+
 import 'views/screens/home.dart';
 import 'views/screens/signup.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Ensure async functions work before runApp()
@@ -14,9 +18,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+
       theme: ThemeData(primarySwatch: Colors.purple),
       home: //TwoFactorAuthenticationScreen(),
        SignupScreen(),
+
     );
   }
 }
