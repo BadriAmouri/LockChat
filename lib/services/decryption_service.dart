@@ -34,36 +34,38 @@ class DecryptionService {
   }
 
   Uint8List decryptAESKeyForRecipient(String encryptedKeyBase64, ECPrivateKey recipientPrivateKey, ECPublicKey senderPublicKey) {
-    print("decryptAESKeyForRecipient - Encrypted Key: \$encryptedKeyBase64");
+    print("decryptAESKeyForRecipient - Encrypted Key: $encryptedKeyBase64");
     final encryptedBytes = base64Decode(encryptedKeyBase64);
-    print("Decoded Encrypted Key: \$encryptedBytes");
+    print("Decoded Encrypted Key: $encryptedBytes");
     
     Uint8List sharedSecret = deriveSharedSecret(recipientPrivateKey, senderPublicKey);
+    print("🤝Decryption Shared Secret (Recipient): $sharedSecret");
     Uint8List derivedAESKey = deriveAESKey(sharedSecret);
     
-    print("Derived AES Key for Recipient: \$derivedAESKey");
+    print("Decryption Derived AES Key for Recipient: $derivedAESKey");
     
     final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key(derivedAESKey), mode: encrypt.AESMode.ecb));
     print("encrypter defined successfully");
     final decryptedAESKey = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes));
     
-    print("Decrypted AES Key: \$decryptedAESKey");
+    print("Decrypted AES Key: $decryptedAESKey");
     return Uint8List.fromList(decryptedAESKey);
   }
 
   Uint8List decryptAESKeyForSender(String encryptedKeyBase64, ECPrivateKey senderPrivateKey, ECPublicKey senderPublicKey) {
-    print("decryptAESKeyForSender - Encrypted Key: \$encryptedKeyBase64");
+    print("decryptAESKeyForSender - Encrypted Key: $encryptedKeyBase64");
     final encryptedBytes = base64Decode(encryptedKeyBase64);
-    print("Decoded Encrypted Key: \$encryptedBytes");
+    print("Decoded Encrypted Key: $encryptedBytes");
     
     Uint8List sharedSecret = deriveSharedSecret(senderPrivateKey, senderPublicKey);
+    print("🤝Decryption Shared Secret (Sender): $sharedSecret");
     Uint8List derivedAESKey = deriveAESKey(sharedSecret);
     
-    print("Derived AES Key for Sender: \$derivedAESKey");
+    print("Decryption Derived AES Key for Sender: $derivedAESKey");
     
     final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key(derivedAESKey), mode: encrypt.AESMode.ecb));
     final decryptedAESKey = encrypter.decryptBytes(encrypt.Encrypted(encryptedBytes));
-    print("Decrypted AES Key: \$decryptedAESKey");
+    print("Decrypted AES Key: $decryptedAESKey");
     return Uint8List.fromList(decryptedAESKey);
   }
 

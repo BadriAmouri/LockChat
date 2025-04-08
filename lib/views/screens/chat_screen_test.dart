@@ -5,7 +5,7 @@ import '../../services/KeyManagementService.dart';
 import '../../services/message_api_service.dart';
 import 'dart:convert'; // ✅ Needed for base64Encode
 import 'package:http/http.dart' as http;
-  import 'dart:convert';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -21,28 +21,132 @@ import 'package:basic_utils/basic_utils.dart';
 class ChatScreen extends StatelessWidget {
   final EncryptionService _encryptionService = EncryptionService();
   final KeyManagementService _keymanagementService=KeyManagementService();
+  Future<void> sendMessageTest() async {
+  try {
+    print("🔐 Starting encryption and message sending...");
+
+    // Get AES Key and Key ID from Key Rotation logic
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(33, 32, "sami");
+    Uint8List aesKey = keyData['aesKey'];
+    String keyId = keyData['keyId'];
+
+    print("🗝️ AES Key (Base64): ${base64Encode(aesKey)}");
+    print("🆔 AES Key ID: $keyId");
+
+    // Encrypt the message
+    String message = "🌍 Hello from sami to Recipient brahimi test!";
+    Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
+
+    String encryptedMessage = encryptedData['encryptedMessage']!;
+    String iv = encryptedData['iv']!;
+
+    print("🧪 IV: $iv");
+    print("📤 Encrypted Message: $encryptedMessage");
+
+    // Send Encrypted Message
+    await MessageAPIService.sendEncryptedMessage(
+      senderId: "33",
+      recipientId: "32",
+      chatroomId: "4",
+      encryptedMessage: encryptedMessage,
+      encryptedKey: keyId,
+      iv: iv,
+      messageType: "text",
+    );
+
+    print("✅ Message sent successfully!");
+  } catch (e) {
+    print("❌ Error sending message: $e");
+  }
+}
+Future<void> decryptForRecipientTest() async {
+  try {
+    print("🧩 Starting decryption for recipient...");
+
+    // Get recipient and sender keys
+    ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchSenderPrivateKey("brahimi");
+    ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(33);
+    ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(32);
+    print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
+    print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
+
+    final decryptionService = DecryptionService();
+
+    // Fetch recipient's latest message
+    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient("32");
+
+    if (recipientMessages.isEmpty) {
+      print("⚠️ No messages found for recipient.");
+      return;
+    }
+
+    final messageData = recipientMessages[0];
+
+    String encryptedMessage = messageData['encrypted_message'];
+    String keyId = messageData['encryption_key_id'];
+    String iv = messageData['iv'];
+
+    print("📨 Encrypted Message Received: $encryptedMessage");
+    print("🆔 AES Key ID: $keyId");
+    print("🧪 IV Received: $iv");
+
+    // Fetch Encrypted AES Key from Server
+    final response = await http.get(
+      Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$keyId'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("🔐 Failed to fetch encrypted key");
+    }
+
+    Map<String, dynamic> data = json.decode(response.body);
+    String encryptedKeyForRecipient = data['encrypted_key_for_recipient'];
+
+    print("🔒 Encrypted AES Key for Recipient: $encryptedKeyForRecipient");
+
+    // Decrypt AES Key using recipient's private + sender's public
+    Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
+      encryptedKeyForRecipient, recipientPrivateKey, senderPublicKey,
+    );
+
+    print("🔓 Decrypted AES Key (Base64): ${base64Encode(decryptedAESKey)}");
+
+    // Decrypt the message
+    String decryptedMessage = decryptionService.decryptMessage(
+      encryptedMessage, decryptedAESKey, iv,
+    );
+
+    print("✅ Decrypted Message: $decryptedMessage");
+  } catch (e) {
+    print("❌ Error during recipient decryption: $e");
+  }
+}
+
+
   void _sendMessage() async {
     // Generate AES Key
-    Uint8List aesKey = await _keymanagementService.rotateKeyIfNeeded(9, 10);
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(19, 20, "iren");
+    Uint8List aesKey = keyData['aesKey'];
+    String keyId = keyData['keyId'];
     // Encrypt Message
-    String message = "YAA RABII TEMCHIII!!!!!!!!";
+    String message = "!!!! test fetching private key  !!!!";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
     print("Encrypted Message: ${encryptedData['encryptedMessage']}");
     print("IV: ${encryptedData['iv']}");
 
 
-    // Encrypt AES Key (for simplicity, using Base64 without RSA for now)
-    String encryptedKey = base64Encode(aesKey);
-    print("Encrypted Key: $encryptedKey");
-
+    // Encrypt AES Key as an Id i should make the function rotateKeyIfNeeded returns the id as well to store it 
+   /*   String encryptedKey = base64Encode(aesKey);
+    print("Encrypted Key: $encryptedKey"); 
+ */
 
     // Send encrypted message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "9",
-      recipientId: "10",
-      chatroomId: "1",
+      senderId: "19",
+      recipientId: "20",
+      chatroomId: "4",
       encryptedMessage: encryptedData['encryptedMessage']!,
-      encryptedKey: encryptedKey,
+      encryptedKey: keyId,
       iv: encryptedData['iv']!,
       messageType: "text",
     );
@@ -76,15 +180,23 @@ Future<void> testDecryption({
     // Pick the first message for testing
     final messageData = senderMessages[0]; // Assuming messages have same content for both
     print("First message of sender fetched .");
+    final messageDataRec = recipientMessages[0];
+    print("First message of receipent fetched .");
     String encryptedMessage = messageData['encrypted_message'];
     print("First message of sender encryptedMessage fetched .");
+    String encryptedMessagerec = messageDataRec['encrypted_message'];
+    print("First message of receipent encryptedMessage fetched .");
     String encryptedKeyid = messageData['encryption_key_id'];
     print("First message of sender encryptedKeyid fetched .");
+    String encryptedKeyidrec = messageDataRec['encryption_key_id'];
+    print("First message of receipent encryptedKeyid fetched .");
     String iv = messageData['iv'];
     print("First message of sender iv fetched .");
+    String ivrec = messageDataRec['iv'];
+    print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://192.168.1.22:5000/api/decryption/keys/$encryptedKeyid'),
+    Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$encryptedKeyid'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -95,6 +207,7 @@ Future<void> testDecryption({
   String encryptedKey = responseData['encrypted_key_for_sender'];
   String encryptedKeyforrec = responseData['encrypted_key_for_recipient'];
   print('Encrypted Key for Sender: $encryptedKey');
+  print('Encrypted Key for Recipient: $encryptedKeyforrec');
      Uint8List senderAESKey = decryptionService.decryptAESKeyForSender(
       encryptedKey, senderPrivateKey, senderPublicKey,
     );
@@ -106,7 +219,10 @@ Future<void> testDecryption({
       encryptedMessage, senderAESKey, iv,
     );
     print("Decrypted Message by Sender: $decryptedMessageSender");
-
+    print("Encrypted aes Key for Receipent sent as param to decryptAESKeyForRecipient: $encryptedKeyforrec");
+    print("Receipent private Key sent as param to decryptAESKeyForRecipient: $recipientPrivateKey");
+    print("Sender public Key sent as param to decryptAESKeyForRecipient: $senderPublicKey");
+    
     // Decrypt AES Key for Recipient
     Uint8List recipientAESKey = decryptionService.decryptAESKeyForRecipient(
       encryptedKeyforrec, recipientPrivateKey, senderPublicKey,
@@ -115,7 +231,7 @@ Future<void> testDecryption({
 
     // Decrypt Message as Recipient
     String decryptedMessageRecipient = decryptionService.decryptMessage(
-      encryptedMessage, recipientAESKey, iv,
+      encryptedMessagerec, recipientAESKey, ivrec,
     );
     print("Decrypted Message by Recipient: $decryptedMessageRecipient");
 
@@ -130,16 +246,110 @@ Future<void> testDecryption({
   void _testDecryption() async {
     try {
       // Fetch keys
-      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchSenderPrivateKey();
+      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
       ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
-      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(9); // Sender's public key
-      ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(10); // Recipient's public key
+      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(19); // Sender's public key
+      ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(20); // Recipient's public key
+      print(senderPrivateKey.parameters?.curve);
+      print(senderPublicKey.parameters?.curve);
+      print(recipientPrivateKey.parameters?.curve);
+      print(recipientPublicKey.parameters?.curve);
 
       // Call testDecryption
       await testDecryption(
-        senderId: "9",
-        recipientId: "10",
+        senderId: "19",
+        recipientId: "20",
         senderPrivateKey: senderPrivateKey,
+        recipientPrivateKey: recipientPrivateKey,
+        senderPublicKey: senderPublicKey,
+        recipientPublicKey: recipientPublicKey,
+      );
+    } catch (e) {
+      print("Error fetching keys for decryption: $e");
+    }
+  }
+
+
+  Future<void> testDecryptionrec({
+  required String senderId,
+  required String recipientId,
+  required ECPrivateKey recipientPrivateKey,
+  required ECPublicKey senderPublicKey,
+  required ECPublicKey recipientPublicKey,
+}) async {
+  try {
+    // Fetch messages sent by sender
+    List<dynamic> senderMessages = await MessageAPIService.getMessagesBySender(senderId);
+    print("Sender Messages: $senderMessages");
+
+    // Fetch messages received by recipient
+    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient(recipientId);
+    print("Recipient Messages: $recipientMessages");
+
+    if (senderMessages.isEmpty || recipientMessages.isEmpty) {
+      print("No messages found for decryption.");
+      return;
+    }
+
+    final decryptionService = DecryptionService();
+    print("DecryptionService called successfuly .");
+    // Pick the first message for testing
+    final messageData = senderMessages[0]; // Assuming messages have same content for both
+    print("First message of sender fetched .");
+    final messageDataRec = recipientMessages[0];
+    print("First message of receipent fetched .");
+    String encryptedMessagerec = messageDataRec['encrypted_message'];
+    print("First message of sender encryptedKeyid fetched .");
+    String encryptedKeyidrec = messageDataRec['encryption_key_id'];
+    print("First message of receipent encryptedKeyid fetched .");
+    String ivrec = messageDataRec['iv'];
+    print("First message of receipent iv fetched .");
+    // Decrypt AES Key for Sender
+    final encryptedKeyResponse = await http.get(
+    Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$encryptedKeyidrec'),
+    );
+
+   if (encryptedKeyResponse.statusCode == 200) {
+  // Decode the response body as JSON
+  Map<String, dynamic> responseData = json.decode(encryptedKeyResponse.body);
+  
+  // Access the 'encrypted_key_for_sender' from the decoded response
+  String encryptedKey = responseData['encrypted_key_for_sender'];
+  String encryptedKeyforrec = responseData['encrypted_key_for_recipient'];
+  print('Encrypted Key for Sender: $encryptedKey');
+  print('Encrypted Key for Recipient: $encryptedKeyforrec');
+
+    // Decrypt AES Key for Recipient
+    Uint8List recipientAESKey = decryptionService.decryptAESKeyForRecipient(
+      encryptedKeyforrec, recipientPrivateKey, senderPublicKey,
+    );
+    print("Recipient Decrypted AES Key: $recipientAESKey");
+
+    // Decrypt Message as Recipient
+    String decryptedMessageRecipient = decryptionService.decryptMessage(
+      encryptedMessagerec, recipientAESKey, ivrec,
+    );
+    print("Decrypted Message by Recipient: $decryptedMessageRecipient");
+
+   } else {
+  throw Exception('Failed to load encrypted key');
+    }
+ 
+  } catch (e) {
+    print("Error in decryption testing: $e");
+  }
+}
+  void _testDecryptionrec() async {
+    try {
+      // Fetch keys
+      ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchSenderPrivateKey("suna");
+      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(17); // Sender's public key
+      ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(16); // Recipient's public key
+
+      // Call testDecryption
+      await testDecryptionrec(
+        senderId: "17",
+        recipientId: "16",
         recipientPrivateKey: recipientPrivateKey,
         senderPublicKey: senderPublicKey,
         recipientPublicKey: recipientPublicKey,
@@ -155,7 +365,7 @@ Future<void> testDecryption({
       appBar: AppBar(title: Text("Chat")),
       body: Center(
         child: ElevatedButton(
-          onPressed: _testDecryption,
+          onPressed: decryptForRecipientTest,
           child: Text("Send Encrypted Message"),
         ),
       ),

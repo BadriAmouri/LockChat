@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MessageAPIService {
-  static const String _baseUrl = 'http://192.168.1.22:5000/api/encryption'; // Change if using a real server
-  static const String _decbaseUrl = 'http://192.168.1.22:5000/api/decryption';
+  static const String _baseUrl = 'http://10.80.0.85:5000/api/encryption'; // Change if using a real server
+  static const String _decbaseUrl = 'http://10.80.0.85:5000/api/decryption';
   /// Sends an encrypted message to the server
   static Future<void> sendEncryptedMessage({
     required String senderId,

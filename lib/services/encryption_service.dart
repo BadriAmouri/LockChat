@@ -54,19 +54,24 @@ String encryptAESKey(Uint8List aesKey, Uint8List derivedAESKey) {
   return encryptedAESKey.base64;
 }
 // Main function to encrypt AES key for sender and recipient
-Map<String, String> encryptAESKeyForSenderAndRecipient(
+Map<String, String> encryptAESKeyForSenderAndRecipient( 
     Uint8List aesKey, ECPrivateKey senderPrivateKey, ECPublicKey senderPublicKey, ECPublicKey recipientPublicKey) {
   
   // Sender encrypts the AES key for themselves
   Uint8List sharedSecretSender = deriveSharedSecret(senderPrivateKey, senderPublicKey);
+  print('[DEBUG] Shared Secret (Sender): $sharedSecretSender');
   Uint8List derivedAESKeySender = deriveAESKey(sharedSecretSender);
+  print('[DEBUG] Derived AES Key for Sender: $derivedAESKeySender');
   String encryptedKeyForSender = encryptAESKey(aesKey, derivedAESKeySender);
+  print('[DEBUG] Encrypted AES Key for Sender: $encryptedKeyForSender');
 
   // Sender encrypts the AES key for the recipient
   Uint8List sharedSecretRecipient = deriveSharedSecret(senderPrivateKey, recipientPublicKey);
+  print('[DEBUG] Shared Secret (Recipient): $sharedSecretRecipient');
   Uint8List derivedAESKeyRecipient = deriveAESKey(sharedSecretRecipient);
+  print('[DEBUG] Derived AES Key for Recipient: $derivedAESKeyRecipient');
   String encryptedKeyForRecipient = encryptAESKey(aesKey, derivedAESKeyRecipient);
-
+  print('[DEBUG] Encrypted AES Key for Recipient: $encryptedKeyForRecipient');
   return {
     'encrypted_key_for_sender': encryptedKeyForSender,
     'encrypted_key_for_recipient': encryptedKeyForRecipient,
