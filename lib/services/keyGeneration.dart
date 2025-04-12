@@ -70,7 +70,7 @@ static Uint8List _generateRandomBytes(int length) {
 
   /// Send the public key to the backend
   static Future<void> _sendPublicKeyToBackend(String username, String publicKeyPem, String email , String password) async {
-    final url = Uri.parse('http://10.80.0.85:5000/auth/register'); // Replace with your backend URL
+    final url = Uri.parse('http://192.168.136.139:5000/auth/register'); // Replace with your backend URL
 
     
     final response = await http.post(

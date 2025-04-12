@@ -22,7 +22,7 @@ class KeyManagementService {
 Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, String sendername) async {
   try {
     final Uri checkRotationUrl = Uri.parse(
-      'http://10.80.0.85:5000/api/encryption/shouldRotateKey/$senderId/$recipientId',
+      'http://192.168.136.139:5000/api/encryption/shouldRotateKey/$senderId/$recipientId',
     );
 
     final response = await http.get(checkRotationUrl);
@@ -38,9 +38,9 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         print("Generated AES Key: ${base64Encode(aesKey)}");
 
         // 🔑 2. Fetch public keys
-        final ECPublicKey recipientPublicKey = await fetchRecipientPublicKey(recipientId);
-        final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
-        final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey(sendername);
+        final ECPublicKey recipientPublicKey = await retrievePublicKeyFromBackend(recipientId);
+        final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
+        final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
 
         // 🔒 3. Encrypt AES key
         final Map<String, String> encryptedKeyForboth = encryptionService.encryptAESKeyForSenderAndRecipient(
@@ -51,7 +51,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         final String? encryptedKeyForSender = encryptedKeyForboth['encrypted_key_for_sender'];
 
         // 🔄 4. Store encrypted keys
-        final Uri storeKeyUrl = Uri.parse('http://10.80.0.85:5000/api/encryption/storeEncryptedKey');
+        final Uri storeKeyUrl = Uri.parse('http://192.168.136.139:5000/api/encryption/storeEncryptedKey');
         final storeKeyResponse = await http.post(
           storeKeyUrl,
           headers: {'Content-Type': 'application/json'},
@@ -78,7 +78,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
       } else {
         // ✅ Fetch existing encryption key
         final Uri fetchKeyUrl = Uri.parse(
-          'http://10.80.0.85:5000/api/encryption/getEncryptedKey',
+          'http://192.168.136.139:5000/api/encryption/getEncryptedKey',
         ).replace(queryParameters: {
           'userId': senderId.toString(),
           'isSender': 'true',
@@ -92,8 +92,8 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
           final String encryptedKey = responseData['key'];
           final String keyId = responseData['id'];
 
-          final ECPublicKey senderPublicKey = await fetchRecipientPublicKey(senderId);
-          final ECPrivateKey senderPrivateKey = await fetchSenderPrivateKey(sendername);
+          final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
+          final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
 
           final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
             encryptedKey, senderPrivateKey, senderPublicKey,
@@ -120,7 +120,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
   }
 }
 
-Future<ECPrivateKey> fetchSendertestPrivateKey() async {
+/* Future<ECPrivateKey> fetchSendertestPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */
   final String? privateKeyPem ="-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg5Wt4rIfs7XglgsxI\nFtwDrgzk69TFQ6O2Db9d+c3OG1ShRANCAATcbRPvGmRtPjMVZeaAPhxC26s35iCG\nTOPCzjLK/YNvZ41L1kmAIj0q0prCPO0RuGIm7i7fsmJyaFTFn+prr47G\n-----END PRIVATE KEY-----\n";
   if (privateKeyPem == null) {
@@ -134,9 +134,9 @@ Future<ECPrivateKey> fetchSendertestPrivateKey() async {
   } catch (e) {
     throw Exception("Failed to parse EC private key: $e");
   }
-}
+} */
 
-Future<ECPrivateKey> fetchReceipentPrivateKey() async {
+/* Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   final String? privateKeyPem =
       "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgBqdF0J9xGmbwM9xN\nKpvRGanygz/kb9c05gOV7X8nI1OhRANCAAQt6hrWyuEuLrI6WnMAzhyvL2QC3nzf\nwnuV9F6Pohfav6TeipIhY9PLwP4UAEPxI72LP/ArBdhuevsggMV8Lyc3\n-----END PRIVATE KEY-----\n";
   
@@ -153,66 +153,53 @@ Future<ECPrivateKey> fetchReceipentPrivateKey() async {
   }
 }
  
+ */
+ Future<ECPrivateKey> retrievePrivateKey(String username) async {
+  final privateKeyBase64 = await secureStorage.read(key: 'privateKey_$username');
 
-  Future<ECPrivateKey> fetchSenderPrivateKey(String username) async {
-    final String? base64PrivateKey =
-        await secureStorage.read(key: 'privateKey_$username');
-
-    if (base64PrivateKey == null) {
-      throw Exception("Private key not found in secure storage.");
-    }
-
-    try {
-      // Step 1: Base64 decode the private key
-      final decodedBytes = base64Decode(base64PrivateKey);
-
-      // Step 2: Since the private key is raw bytes, directly create a BigInt from it
-      final d = BigInt.parse(decodedBytes.toList().map((e) => e.toRadixString(16)).join(), radix: 16);
-
-      // Step 3: Define curve params (secp256r1 or whichever curve you're using)
-      final domainParams = ECCurve_secp256r1();
-
-      // Step 4: Create the ECPrivateKey using the decoded BigInt and domain parameters
-      final ecPrivateKey = ECPrivateKey(d, domainParams);
-
-      print("[✅] Successfully reconstructed EC Private Key for $username");
-      print("[DEBUG] d (fetched privateKey): ${ecPrivateKey.d}");
-      return ecPrivateKey;
-    } catch (e) {
-      throw Exception("❌ Failed to parse EC private key: $e");
-    }
+  if (privateKeyBase64 == null) {
+    throw Exception("🔐 Private key for user '$username' not found in secure storage.");
   }
 
-Future<ECPublicKey> fetchRecipientPublicKey(int recipientId) async {
-  final response = await http.get(
-    Uri.parse('http://10.80.0.85:5000/api/encryption/users/$recipientId/publicKey'),
-  );
-
-  if (response.statusCode == 200) {
-    final String base64PublicKey = jsonDecode(response.body)['publicKey'];
-
-    // Debugging: Print the fetched base64 public key
-    print("Fetched Public Key (Base64):\n$base64PublicKey");
-
-    try {
-      // Decode the base64-encoded public key into bytes
-      final pubKeyBytes = base64Decode(base64PublicKey);
-
-      // Use the appropriate curve (secp256r1/prime256v1) for decoding the public key
-      final domainParams = ECCurve_secp256r1(); // Corresponds to prime256v1
-      final q = domainParams.curve.decodePoint(pubKeyBytes);
-
-      // Return the EC public key
-      final ecPublicKey = ECPublicKey(q, domainParams);
-      print("Parsed EC Public Key: $ecPublicKey");
-
-      return ecPublicKey;
-    } catch (e) {
-      throw Exception("Failed to parse EC public key: $e");
-    }
-  } else {
-    throw Exception("Failed to fetch recipient's public key");
+  try {
+    final decoded = utf8.decode(base64Decode(privateKeyBase64));
+    final d = BigInt.parse(decoded, radix: 16);
+    final domainParams = ECDomainParameters('secp256r1');
+    return ECPrivateKey(d, domainParams);
+  } catch (e) {
+    throw Exception("❌ Failed to decode private key: $e");
   }
 }
+
+
+ Future<ECPublicKey> retrievePublicKeyFromBackend(int username) async {
+  final url = Uri.parse('http://192.168.136.139:5000/api/encryption/users/$username/publicKey');
+
+  final response = await http.get(url);
+
+  if (response.statusCode != 200) {
+    throw Exception("❌ Failed to retrieve public key: ${response.statusCode} ${response.body}");
+  }
+
+  try {
+    final data = jsonDecode(response.body);
+    final publicKeyBase64 = data['publicKey'];
+
+    final bytes = base64Decode(publicKeyBase64);
+    final domainParams = ECDomainParameters('secp256r1');
+    final curve = domainParams.curve;
+    final q = curve.decodePoint(bytes);
+
+    if (q == null) {
+      throw Exception("❌ Failed to decode EC point from public key bytes.");
+    }
+
+    return ECPublicKey(q, domainParams);
+  } catch (e) {
+    throw Exception("❌ Error while decoding public key: $e");
+  }
+}
+
+
 
 }

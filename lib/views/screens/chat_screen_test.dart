@@ -26,7 +26,7 @@ class ChatScreen extends StatelessWidget {
     print("🔐 Starting encryption and message sending...");
 
     // Get AES Key and Key ID from Key Rotation logic
-    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(33, 32, "sami");
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(49, 50, "momo");
     Uint8List aesKey = keyData['aesKey'];
     String keyId = keyData['keyId'];
 
@@ -34,7 +34,7 @@ class ChatScreen extends StatelessWidget {
     print("🆔 AES Key ID: $keyId");
 
     // Encrypt the message
-    String message = "🌍 Hello from sami to Recipient brahimi test!";
+    String message = "🌍 heyyy jake this is momo sending the message the decryption is working yeyyyy !";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
 
     String encryptedMessage = encryptedData['encryptedMessage']!;
@@ -45,8 +45,8 @@ class ChatScreen extends StatelessWidget {
 
     // Send Encrypted Message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "33",
-      recipientId: "32",
+      senderId: "49",
+      recipientId: "50",
       chatroomId: "4",
       encryptedMessage: encryptedMessage,
       encryptedKey: keyId,
@@ -64,16 +64,16 @@ Future<void> decryptForRecipientTest() async {
     print("🧩 Starting decryption for recipient...");
 
     // Get recipient and sender keys
-    ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchSenderPrivateKey("brahimi");
-    ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(33);
-    ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(32);
+    ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("jake");
+    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(49);
+    ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(50);
     print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
     print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
 
     final decryptionService = DecryptionService();
 
     // Fetch recipient's latest message
-    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient("32");
+    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient("50");
 
     if (recipientMessages.isEmpty) {
       print("⚠️ No messages found for recipient.");
@@ -92,7 +92,7 @@ Future<void> decryptForRecipientTest() async {
 
     // Fetch Encrypted AES Key from Server
     final response = await http.get(
-      Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$keyId'),
+      Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$keyId'),
     );
 
     if (response.statusCode != 200) {
@@ -125,11 +125,11 @@ Future<void> decryptForRecipientTest() async {
 
   void _sendMessage() async {
     // Generate AES Key
-    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(19, 20, "iren");
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(50, 51, "jake");
     Uint8List aesKey = keyData['aesKey'];
     String keyId = keyData['keyId'];
     // Encrypt Message
-    String message = "!!!! test fetching private key  !!!!";
+    String message = "!!!! 🌍 yEYYYYYY  !!!!";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
     print("Encrypted Message: ${encryptedData['encryptedMessage']}");
     print("IV: ${encryptedData['iv']}");
@@ -142,8 +142,8 @@ Future<void> decryptForRecipientTest() async {
 
     // Send encrypted message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "19",
-      recipientId: "20",
+      senderId: "50",
+      recipientId: "51",
       chatroomId: "4",
       encryptedMessage: encryptedData['encryptedMessage']!,
       encryptedKey: keyId,
@@ -196,7 +196,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$encryptedKeyid'),
+    Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$encryptedKeyid'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -246,10 +246,10 @@ Future<void> testDecryption({
   void _testDecryption() async {
     try {
       // Fetch keys
-      ECPrivateKey senderPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
-      ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchReceipentPrivateKey();
-      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(19); // Sender's public key
-      ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(20); // Recipient's public key
+      ECPrivateKey senderPrivateKey = await _keymanagementService.retrievePrivateKey("jake");
+      ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("heesu");
+      ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(50); // Sender's public key
+      ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(51); // Recipient's public key
       print(senderPrivateKey.parameters?.curve);
       print(senderPublicKey.parameters?.curve);
       print(recipientPrivateKey.parameters?.curve);
@@ -257,8 +257,8 @@ Future<void> testDecryption({
 
       // Call testDecryption
       await testDecryption(
-        senderId: "19",
-        recipientId: "20",
+        senderId: "50",
+        recipientId: "51",
         senderPrivateKey: senderPrivateKey,
         recipientPrivateKey: recipientPrivateKey,
         senderPublicKey: senderPublicKey,
@@ -306,7 +306,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.0.85:5000/api/decryption/keys/$encryptedKeyidrec'),
+    Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$encryptedKeyidrec'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -342,9 +342,9 @@ Future<void> testDecryption({
   void _testDecryptionrec() async {
     try {
       // Fetch keys
-      ECPrivateKey recipientPrivateKey = await _keymanagementService.fetchSenderPrivateKey("suna");
-      ECPublicKey senderPublicKey = await _keymanagementService.fetchRecipientPublicKey(17); // Sender's public key
-      ECPublicKey recipientPublicKey = await _keymanagementService.fetchRecipientPublicKey(16); // Recipient's public key
+      ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("suna");
+      ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(17); // Sender's public key
+      ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(16); // Recipient's public key
 
       // Call testDecryption
       await testDecryptionrec(
@@ -365,7 +365,7 @@ Future<void> testDecryption({
       appBar: AppBar(title: Text("Chat")),
       body: Center(
         child: ElevatedButton(
-          onPressed: decryptForRecipientTest,
+          onPressed: _testDecryption,
           child: Text("Send Encrypted Message"),
         ),
       ),
