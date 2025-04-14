@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../widgets/header.dart';
 import 'login.dart';
+import '../../services/keyGeneration.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -223,44 +224,56 @@ class _SignupScreenState extends State<SignupScreen> {
                   const SizedBox(height: 100),
 
                   // Create Account button
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (_validateInputs()) {
-                          // Sign up successful, navigate to login screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Account created successfully!'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                          //Navigate to login after successful signup
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.buttonColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 16,
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: const Text('Create Account'),
-                    ),
+
+              Center(
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (_validateInputs()) {
+                      try {
+                        // ✅ Call KeyGenerationService to handle key generation, storage, and backend communication
+                        await KeyGenerationService.generateAndStoreKeyPair(
+                          _usernameController.text.trim(),
+                          _emailController.text.trim(),
+                          _passwordController.text,
+                        );
+
+                        // ✅ Show success message
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Account created successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+
+                        // ✅ Navigate to login screen
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        );
+
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Error: $e"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.buttonColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                    textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                   ),
+                  child: const Text('Create Account'),
+                ),
+              ),
+
+
+
 
                   const SizedBox(height: 24),
 
