@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
-import '../widgets/wave_clipper.dart';
+import '../widgets/header.dart';
 import 'login.dart';
 import '../../services/keyGeneration.dart';
 
@@ -17,7 +17,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  
+
   // Error messages
   String? _usernameError;
   String? _emailError;
@@ -30,18 +30,18 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-  
+
   // Validation methods
   bool _validateInputs() {
     bool isValid = true;
-    
+
     // Reset errors
     setState(() {
       _usernameError = null;
       _emailError = null;
       _passwordError = null;
     });
-    
+
     // Username validation
     if (_usernameController.text.isEmpty) {
       setState(() {
@@ -49,14 +49,14 @@ class _SignupScreenState extends State<SignupScreen> {
       });
       isValid = false;
 
-      //backend team check that it is unique i've put moussa to facilitate 
+      //backend team check that it is unique i've put moussa to facilitate
     } else if (_usernameController.text.trim() == 'moussa') {
       setState(() {
         _usernameError = 'Username "moussa" is already taken';
       });
       isValid = false;
     }
-    
+
     // Email validation
     final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (_emailController.text.isEmpty) {
@@ -70,7 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
       });
       isValid = false;
     }
-    
+
     // Password validation
     if (_passwordController.text.isEmpty) {
       setState(() {
@@ -83,7 +83,7 @@ class _SignupScreenState extends State<SignupScreen> {
       });
       isValid = false;
     }
-    
+
     return isValid;
   }
 
@@ -96,42 +96,10 @@ class _SignupScreenState extends State<SignupScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Purple wave with PWA text
-            Stack(
-              children: [
-                ClipPath(
-                  clipper: WaveClipper(),
-                  child: Container(
-                    height: 300,
-                    color: AppColors.darkpurple.withOpacity(0.8),
-                  ),
-                ),
-                const Positioned(
-                  top: 80,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      'PWA',
-                      style: TextStyle(
-                        fontSize: 80,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(2, 2),
-                            blurRadius: 3,
-                            color: Colors.black12,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            
+            HeaderWidget(text: "PWA"),
+
             const SizedBox(height: 20),
-            
+
             // Sign Up for Account
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -146,9 +114,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Sign Up tab indicator
                   Row(
                     children: [
@@ -167,14 +135,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ],
                   ),
-                  
+
                   // Purple line
                   Container(
                     height: 3,
                     color: AppColors.darkpurple,
                     margin: const EdgeInsets.only(top: 8, bottom: 24),
                   ),
-                  
+
                   Form(
                     key: _formKey,
                     child: Column(
@@ -196,9 +164,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             errorText: _usernameError,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Email field
                         TextField(
                           controller: _emailController,
@@ -216,9 +184,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             errorText: _emailError,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Password field
                         TextField(
                           controller: _passwordController,
@@ -236,7 +204,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             errorText: _passwordError,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword 
+                                _obscurePassword
                                     ? Icons.lock_outline
                                     : Icons.lock_open_outlined,
                                 color: Colors.grey,
@@ -252,10 +220,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 100),
-                  
+
                   // Create Account button
+
               Center(
                 child: ElevatedButton(
                   onPressed: () async {
@@ -302,8 +271,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: const Text('Create Account'),
                 ),
               ),
+
+
+
+
                   const SizedBox(height: 24),
-                  
+
                   // Already have account? LogIn
                   Center(
                     child: Row(

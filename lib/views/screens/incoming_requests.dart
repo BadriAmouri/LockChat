@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../widgets/request_item.dart';
-import '../widgets/wave_clipper.dart';
+import '../widgets/header_backButton.dart';
 import 'send_request_screen.dart';
 
 class ChatRequestListScreen extends StatefulWidget {
@@ -67,67 +67,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
       body: Column(
         children: [
           // Purple wave top decoration
-          Stack(
-            children: [
-              ClipPath(
-                clipper: WaveClipper(),
-                child: Container(
-                  height: 200,
-                  color: AppColors.darkpurple.withOpacity(0.8),
-                ),
-              ),
-              Positioned(
-                top: 60,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Column(
-                    children: const [
-                      Text(
-                        'PWA',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              offset: Offset(2, 2),
-                              blurRadius: 3,
-                              color: Colors.black12,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        'Chat Requests',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Back button
-              Positioned(
-                top: 50,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ],
-          ),
+          HeaderWaveWidget(title: 'PWA', subtitle: 'Chat requests'),
 
           // Request count
           Padding(
