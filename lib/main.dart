@@ -26,7 +26,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: SignupScreen(),
+
+      home: ChatListScreen(),
+
 
     );
   }
