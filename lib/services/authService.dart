@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class AuthService {
   // Replace with your actual API base URL
-  final String baseUrl = 'http://10.80.1.212:5000/auth';
+  final String baseUrl = 'http://10.80.1.239:5000/auth';
   
   // Login method
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -20,6 +20,8 @@ class AuthService {
       );
       
       final responseData = jsonDecode(response.body);
+      print("✅✅✅✅✅LOG IN CALLED✅✅✅✅");
+      print(responseData);
       
       if (response.statusCode == 200) {
         // Store tokens securely (you should use flutter_secure_storage in production)
@@ -27,6 +29,7 @@ class AuthService {
           'success': true,
           'accessToken': responseData['accessToken'],
           'refreshToken': responseData['refreshToken'],
+          'user_id': responseData['user_id'],
           'message': responseData['message'],
         };
       } else {

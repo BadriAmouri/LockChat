@@ -82,6 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
         result['accessToken'],
         result['refreshToken'],
       );
+      await _tokenStorage.saveUserId(result['user_id'].toString());
+
+
 
       
       final storedAccessToken = await _tokenStorage.getAccessToken();

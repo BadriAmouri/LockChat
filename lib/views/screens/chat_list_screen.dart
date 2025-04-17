@@ -7,6 +7,7 @@ import '../theme/colors.dart';
 import 'chat_screen_test.dart';
 import 'chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/jwt_handler.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -25,18 +26,13 @@ void initState() {
 }
 
 Future<void> _loadChatrooms() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token');
 
-  if (token != null) {
     setState(() {
-      _chatroomsFuture = ChatService.fetchChatrooms(token);
+      _chatroomsFuture = ChatService.fetchChatrooms();
     });
-  } else {
-    // handle the case where token is not found (maybe redirect to login?)
-    print('No token found!');
-  }
+
 }
+
 
 
 

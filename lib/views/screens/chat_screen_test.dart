@@ -94,7 +94,7 @@ Future<void> decryptForRecipientTest() async {
 
     // Fetch Encrypted AES Key from Server
     final response = await http.get(
-      Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$keyId'),
+      Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$keyId'),
     );
 
     if (response.statusCode != 200) {
@@ -198,7 +198,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$encryptedKeyid'),
+    Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$encryptedKeyid'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -308,7 +308,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$encryptedKeyidrec'),
+    Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$encryptedKeyidrec'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {

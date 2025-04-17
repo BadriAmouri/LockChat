@@ -6,7 +6,7 @@ import 'tokenStorage.dart';
 
 class JwtHandler {
   final TokenStorage _tokenStorage = TokenStorage();
-  final String baseUrl = 'http://10.80.1.212:5000/auth'; 
+  final String baseUrl = 'http://10.80.1.239:5000/auth'; 
   
   // Check if token is expired or about to expire (within 5 minutes)
   bool _isTokenExpiringSoon(String token) {
@@ -66,7 +66,8 @@ class JwtHandler {
   Future<http.Client> getAuthenticatedClient() async {
     final client = http.Client();
     final accessToken = await getValidAccessToken();
-    
+      print('fetched token is :');
+      print(accessToken);
     if (accessToken == null) {
       throw Exception('Not authenticated');
     }
@@ -77,18 +78,20 @@ class JwtHandler {
   // Authenticated GET request
   Future<http.Response> authenticatedGet(String endpoint) async {
     final accessToken = await getValidAccessToken();
-    
+    print("✅✅✅ accessToken got successfully ! ✅✅✅");
+     print(accessToken);
     if (accessToken == null) {
       throw Exception('Not authenticated');
     }
-    
+    print("call to  $endpoint");
     return http.get(
-      Uri.parse('$baseUrl/$endpoint'),
+      Uri.parse('http://10.80.1.239:5000/$endpoint'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
     );
+    
   }
   
   // Authenticated POST request
