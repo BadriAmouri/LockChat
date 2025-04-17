@@ -14,6 +14,11 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  // create the routes of other pages
+  static final Map<String, WidgetBuilder> routes = {
+    '/ChatScreen': (context) => ChatScreen(),
+  };
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,7 +26,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.purple,
       ),
-      home: ChatScreen(),
+      home: SignupScreen(),
 
     );
   }

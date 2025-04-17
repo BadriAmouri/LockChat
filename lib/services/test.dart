@@ -8,7 +8,7 @@ class KeyGenerationService {
   /// Register user and retrieve private key from backend
   static Future<void> registerUserAndStorePrivateKey(
       String username, String email, String password) async {
-    final url = Uri.parse('http://10.80.0.85:5000/auth/register');
+    final url = Uri.parse('http://192.168.190.240:5000/auth/register');
 
     final response = await http.post(
       url,
