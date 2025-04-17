@@ -38,6 +38,7 @@ dependencies:
   asn1lib: ^1.6.2
   basic_utils: ^5.6.1 
   convert: ^3.0.1
+  jwt_decoder: ^2.0.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

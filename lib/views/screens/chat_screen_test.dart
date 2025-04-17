@@ -19,6 +19,8 @@ import 'package:pointycastle/asymmetric/api.dart';
 import 'package:basic_utils/basic_utils.dart';
 /* THIS IS NOT THE ACTUAL UI WAS ONLY USED FOR TESTING PURPOSE */
 class ChatScreen extends StatelessWidget {
+  // create the route of the chat screen 
+  static const String routeName = '/ChatScreen';
   final EncryptionService _encryptionService = EncryptionService();
   final KeyManagementService _keymanagementService=KeyManagementService();
   Future<void> sendMessageTest() async {
@@ -92,7 +94,7 @@ Future<void> decryptForRecipientTest() async {
 
     // Fetch Encrypted AES Key from Server
     final response = await http.get(
-      Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$keyId'),
+      Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$keyId'),
     );
 
     if (response.statusCode != 200) {
@@ -196,7 +198,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$encryptedKeyid'),
+    Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$encryptedKeyid'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -306,7 +308,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://192.168.136.139:5000/api/decryption/keys/$encryptedKeyidrec'),
+    Uri.parse('http://10.80.1.212:5000/api/decryption/keys/$encryptedKeyidrec'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {

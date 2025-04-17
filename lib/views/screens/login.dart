@@ -1,5 +1,7 @@
-// views/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:lockchat/views/screens/chat_list_screen.dart';
+import '../../services/authService.dart';
+import '../../services/tokenStorage.dart';
 import '../theme/colors.dart';
 import '../widgets/header.dart';
 import 'signup.dart';
@@ -14,13 +16,17 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final AuthService _authService = AuthService();
+  final TokenStorage _tokenStorage = TokenStorage();
+
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
-  // Error messages
   String? _usernameError;
   String? _passwordError;
+  bool _loading = false;
+  String? _loginError;
 
   @override
   void dispose() {
@@ -29,38 +35,84 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Validation methods
   bool _validateInputs() {
     bool isValid = true;
 
-    // Reset errors
     setState(() {
       _usernameError = null;
       _passwordError = null;
+      _loginError = null;
     });
 
-    // Username validation
     if (_usernameController.text.isEmpty) {
-      setState(() {
-        _usernameError = 'Username is required';
-      });
+      _usernameError = 'Username is required';
       isValid = false;
     }
 
-    // Password validation
     if (_passwordController.text.isEmpty) {
-      setState(() {
-        _passwordError = 'Password is required';
-      });
+      _passwordError = 'Password is required';
       isValid = false;
     } else if (_passwordController.text.length < 6) {
-      setState(() {
-        _passwordError = 'Password must be at least 6 characters';
-      });
+      _passwordError = 'Password must be at least 6 characters';
       isValid = false;
     }
 
     return isValid;
+  }
+
+  Future<void> _handleLogin() async {
+    if (!_validateInputs()) return;
+
+    setState(() {
+      _loading = true;
+      _loginError = null;
+    });
+
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    final result = await _authService.login(username, password);
+
+    if (result['success']) {
+      await _tokenStorage.saveTokens(
+        result['accessToken'],
+        result['refreshToken'],
+      );
+
+      await _tokenStorage.saveTokens(
+        result['accessToken'],
+        result['refreshToken'],
+      );
+
+      
+      final storedAccessToken = await _tokenStorage.getAccessToken();
+      print(
+        "🟢 [DEBUG] Access Token Stored Securely: 🔐\n$storedAccessToken\n",
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: AppColors.buttonColor,
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatListScreen(),
+          ),
+        );
+      }
+    } else {
+      setState(() {
+        _loginError = result['error'] ?? 'Login failed';
+      });
+    }
+
+    setState(() {
+      _loading = false;
+    });
   }
 
   @override
@@ -71,12 +123,8 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Purple wave with PWA text
             HeaderWidget(text: "PWA"),
-
             const SizedBox(height: 20),
-
-            // Login On Your Account
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
@@ -90,10 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  // Login tab indicator
                   Row(
                     children: [
                       Icon(Icons.login_rounded, color: AppColors.darkpurple),
@@ -108,20 +153,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-
-                  // Purple line
                   Container(
                     height: 3,
                     color: AppColors.darkpurple,
                     margin: const EdgeInsets.only(top: 8, bottom: 24),
                   ),
-
                   Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Username field
                         TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
@@ -137,10 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             errorText: _usernameError,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
-                        // Password field
                         TextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
@@ -169,36 +207,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                        if (_loginError != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            _loginError!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 100),
-
-                  // Next Step button
                   Center(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // call the api login 
-                        if (_validateInputs()) {
-                          // Login successful, navigate to next screen
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('verify your identity'),
-                              backgroundColor: AppColors.buttonColor,
-                            ),
-                          );
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => TwoFactorAuthenticationScreen(),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: _loading ? null : _handleLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.buttonColor,
                         foregroundColor: Colors.white,
@@ -214,20 +236,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Text('Next Step'),
-                          SizedBox(width: 8),
-                          Icon(Icons.fast_forward_rounded),
-                        ],
-                      ),
+                      child:
+                          _loading
+                              ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                              : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Text('Next Step'),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.fast_forward_rounded),
+                                ],
+                              ),
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Don't have account? Sign Up
                   Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
