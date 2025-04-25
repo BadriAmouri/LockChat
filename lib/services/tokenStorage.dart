@@ -13,6 +13,7 @@ class TokenStorage {
   Future<void> saveTokens(String accessToken, String refreshToken) async {
     await _storage.write(key: _refreshTokenKey, value: refreshToken);
     await _storage.write(key: _refreshTokenKey, value: refreshToken);
+    await _storage.write(key: _accessTokenKey, value: accessToken); // ✅ FIXED
   }
 
   Future<void> saveUserId(String userid) async {

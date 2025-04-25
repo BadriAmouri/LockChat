@@ -6,7 +6,7 @@ import 'tokenStorage.dart';
 
 class JwtHandler {
   final TokenStorage _tokenStorage = TokenStorage();
-  final String baseUrl = 'http://10.80.1.239:5000/auth'; 
+  final String baseUrl = 'https://lock-chat-backend.vercel.app/auth'; 
   
   // Check if token is expired or about to expire (within 5 minutes)
   bool _isTokenExpiringSoon(String token) {
@@ -85,7 +85,7 @@ class JwtHandler {
     }
     print("call to  $endpoint");
     return http.get(
-      Uri.parse('http://10.80.1.239:5000/$endpoint'),
+      Uri.parse('https://lock-chat-backend.vercel.app/$endpoint'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',

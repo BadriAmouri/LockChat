@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class AuthService {
   // Replace with your actual API base URL
-  final String baseUrl = 'http://10.80.1.239:5000/auth';
+  final String baseUrl = 'https://lock-chat-backend.vercel.app/auth';
   
   // Login method
   Future<Map<String, dynamic>> login(String username, String password) async {

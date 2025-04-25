@@ -22,7 +22,7 @@ class KeyManagementService {
 Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, String sendername) async {
   try {
     final Uri checkRotationUrl = Uri.parse(
-      'http://10.80.1.239:5000/api/encryption/shouldRotateKey/$senderId/$recipientId',
+      'https://lock-chat-backend.vercel.app/api/encryption/shouldRotateKey/$senderId/$recipientId',
     );
 
     final response = await http.get(checkRotationUrl);
@@ -51,7 +51,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         final String? encryptedKeyForSender = encryptedKeyForboth['encrypted_key_for_sender'];
 
         // 🔄 4. Store encrypted keys
-        final Uri storeKeyUrl = Uri.parse('http://10.80.1.239:5000/api/encryption/storeEncryptedKey');
+        final Uri storeKeyUrl = Uri.parse('https://lock-chat-backend.vercel.app/api/encryption/storeEncryptedKey');
         final storeKeyResponse = await http.post(
           storeKeyUrl,
           headers: {'Content-Type': 'application/json'},
@@ -78,7 +78,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
       } else {
         // ✅ Fetch existing encryption key
         final Uri fetchKeyUrl = Uri.parse(
-          'http://10.80.1.239:5000/api/encryption/getEncryptedKey',
+          'https://lock-chat-backend.vercel.app/api/encryption/getEncryptedKey',
         ).replace(queryParameters: {
           'userId': senderId.toString(),
           'isSender': 'true',
@@ -173,7 +173,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
 
 
  Future<ECPublicKey> retrievePublicKeyFromBackend(int username) async {
-  final url = Uri.parse('http://10.80.1.239:5000/api/encryption/users/$username/publicKey');
+  final url = Uri.parse('https://lock-chat-backend.vercel.app/api/encryption/users/$username/publicKey');
 
   final response = await http.get(url);
 

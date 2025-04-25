@@ -5,7 +5,7 @@ import '../../services/jwt_handler.dart';
 import '../../services/decryption_service.dart';
 
 class ChatService {
-  static const String baseUrl = 'http://10.80.1.239:5000';
+  static const String baseUrl = 'https://lock-chat-backend.vercel.app';
   static const String endpoint = 'api/chatrooms/getAllChatrooms';
 
   static Future<List<Chatroom>> fetchChatrooms() async {
