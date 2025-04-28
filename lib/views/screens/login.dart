@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lockchat/views/screens/chat_list_screen.dart';
+import 'package:lockchat/views/screens/incoming_requests.dart';
+import 'package:lockchat/views/screens/send_request_screen.dart';
 import '../../services/authService.dart';
 import '../../services/tokenStorage.dart';
 import '../theme/colors.dart';
@@ -103,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatListScreen(),
+            builder: (context) => ChatRequestListScreen(),
           ),
         );
       }
