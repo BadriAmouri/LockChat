@@ -28,7 +28,7 @@ class ChatScreen extends StatelessWidget {
     print("🔐 Starting encryption and message sending...");
 
     // Get AES Key and Key ID from Key Rotation logic
-    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(57, 87, "kuroo");
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(88, 87, "bogum");
     Uint8List aesKey = keyData['aesKey'];
     String keyId = keyData['keyId'];
 
@@ -36,7 +36,7 @@ class ChatScreen extends StatelessWidget {
     print("🆔 AES Key ID: $keyId");
 
     // Encrypt the message
-    String message = "🌍 PLEASE PLEASEEE   !";
+    String message = "🌍 I M SO HAPPY  !";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
 
     String encryptedMessage = encryptedData['encryptedMessage']!;
@@ -47,9 +47,9 @@ class ChatScreen extends StatelessWidget {
 
     // Send Encrypted Message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "57",
+      senderId: "88",
       recipientId: "87",
-      chatroomId: "8",
+      chatroomId: "9",
       encryptedMessage: encryptedMessage,
       encryptedKey: keyId,
       iv: iv,
@@ -67,7 +67,7 @@ Future<void> decryptForRecipientTest() async {
 
     // Get recipient and sender keys
     ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("aesun");
-    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(57);
+    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(88);
     ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(87);
     print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
     print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
@@ -366,10 +366,18 @@ Future<void> testDecryption({
     return Scaffold(
       appBar: AppBar(title: Text("Chat")),
       body: Center(
-        child: ElevatedButton(
-          onPressed: decryptForRecipientTest,
+        child: Column(children: [
+          ElevatedButton(
+          onPressed: sendMessageTest,
           child: Text("Send Encrypted Message"),
         ),
+          ElevatedButton(
+          onPressed: decryptForRecipientTest,
+          child: Text("Decrypt Encrypted Message"),
+        ),
+
+        ],)
+
       ),
     );
   }

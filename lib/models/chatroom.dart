@@ -4,10 +4,10 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import '../../services/decryption_service.dart';
 import '../../services/KeyManagementService.dart';
-import 'dart:convert'; 
 import 'package:pointycastle/pointycastle.dart';
 import '../../services/jwt_handler.dart';
 import '../../services/tokenStorage.dart';
+
 class Chatroom {
   String name;
   String lastMessage;
@@ -34,7 +34,8 @@ class Chatroom {
     if (rawTimestamp != null) {
       final dateTime = DateTime.tryParse(rawTimestamp);
       if (dateTime != null) {
-        formattedTime = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+        formattedTime =
+            '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
       }
     }
 
@@ -44,117 +45,111 @@ class Chatroom {
       time: formattedTime,
       imageUrl: json['imageUrl'] ?? 'https://via.placeholder.com/50',
       unreadMessages: json['unreadMessages'] ?? 0,
-      keyId: json['encryption_key_id'] ?? '',  // Ensure encryption_key_id is retrieved
-      iv: json['iv'] ?? '',  // Ensure iv is retrieved
+      keyId: json['encryption_key_id'] ?? '',
+      iv: json['iv'] ?? '',
     );
   }
 
-  // Method to fetch the decryption key, decrypt the message, and update lastMessage
-Future<void> decryptLastMessage(Map<String, dynamic> jsonres, DecryptionService decryptionService) async {
+ Future<void> decryptLastMessage(Map<String, dynamic> jsonres, DecryptionService decryptionService) async {
   try {
     final TokenStorage _tokenStorage = TokenStorage();
     final userIdString = await _tokenStorage.getUserId();
     final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
 
     if (userId == null) {
-      print('No valid access token available');
+      print('🚫 No valid user ID');
       return;
     }
 
-    int lastMessageSenderId = jsonres['last_message_sender_id'];
-    int member0Id = jsonres['members'][0]['user_id'];
-    int member1Id = jsonres['members'][1]['user_id'];
+    final members = jsonres['members'];
+    if (members == null || members.length < 2) {
+      print('🚫 Invalid members list');
+      return;
+    }
 
-    // Identify sender and recipient correctly
-    late int senderId;
-    late int recipientId;
-    late String senderName;
-    late String recipientName;
+    final int lastMessageSenderId = jsonres['last_message_sender_id'] ?? -1;
+    final int member0Id = members[0]['user_id'];
+    final int member1Id = members[1]['user_id'];
 
-    
-
+    late int senderId, recipientId;
+    late String senderName, recipientName;
+    late String senderPic, recipientPic;
 
     if (lastMessageSenderId == member0Id) {
       senderId = member0Id;
       recipientId = member1Id;
-      senderName = jsonres['members'][0]['name'];
-      recipientName = jsonres['members'][1]['name'];
-     
-     
-      
+      senderName = members[0]['name'];
+      recipientName = members[1]['name'];
+      senderPic = members[0]['profile_pic'] ?? '';
+      recipientPic = members[1]['profile_pic'] ?? '';
     } else if (lastMessageSenderId == member1Id) {
       senderId = member1Id;
       recipientId = member0Id;
-      senderName = jsonres['members'][1]['name'];
-      recipientName = jsonres['members'][0]['name'];
-
+      senderName = members[1]['name'];
+      recipientName = members[0]['name'];
+      senderPic = members[1]['profile_pic'] ?? '';
+      recipientPic = members[0]['profile_pic'] ?? '';
     } else {
-      print('Sender not found in chat members!');
+      print('🚫 Sender not found in members');
       return;
     }
 
-    // Determine if the current user is the sender or the recipient
-    bool isCurrentUserSender = (userId == senderId);
-    bool isCurrentUserRecipient = (userId == recipientId);
+    final isCurrentUserSender = (userId == senderId);
+    final isCurrentUserRecipient = (userId == recipientId);
 
     if (!isCurrentUserSender && !isCurrentUserRecipient) {
-      print('Current user is neither sender nor recipient.');
+      print('🚫 Current user not in this chat');
       return;
     }
 
-    // Fetch the sender's public key
-    KeyManagementService _keyManagementService = KeyManagementService();
-    ECPublicKey senderPublicKey = await _keyManagementService.retrievePublicKeyFromBackend(senderId);
+    final keyService = KeyManagementService();
+    final senderPublicKey = await keyService.retrievePublicKeyFromBackend(senderId);
+    final userPrivateKey = await keyService.retrievePrivateKey(isCurrentUserSender ? senderName : recipientName);
 
-    // Fetch your private key
-    ECPrivateKey userPrivateKey;
-    if (isCurrentUserSender) {
-      userPrivateKey = await _keyManagementService.retrievePrivateKey(senderName);
-      name = recipientName; // Set the chatroom name to the recipient
-    
-    } else {
-      userPrivateKey = await _keyManagementService.retrievePrivateKey(recipientName);
-      name = senderName; // Set the chatroom name to the sender
-      
+    // Set name & profile image accordingly
+    name = isCurrentUserSender ? recipientName : senderName;
+    imageUrl = isCurrentUserSender ? recipientPic : senderPic;
+
+    if (keyId.isEmpty) {
+      print('🚫 No keyId provided');
+      return;
     }
 
-    // Fetch the encryption key
     final response = await http.get(
       Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$keyId'),
     );
 
     if (response.statusCode == 200) {
-      Map<String, dynamic> data = json.decode(response.body);
+      final Map<String, dynamic> data = json.decode(response.body);
+      final encryptedKey = isCurrentUserSender ? data['encrypted_key_for_sender'] : data['encrypted_key_for_recipient'];
 
-      // Choose the correct encrypted key based on whether you are sender or recipient
-      String encryptedKey;
-      if (isCurrentUserSender) {
-        encryptedKey = data['encrypted_key_for_sender'];
-      } else {
-        encryptedKey = data['encrypted_key_for_recipient'];
+      if (encryptedKey == null || encryptedKey.isEmpty) {
+        print('🚫 Encrypted key not available');
+        return;
       }
 
-      // Decrypt the AES key
-      Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
+      final Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
         encryptedKey, userPrivateKey, senderPublicKey,
       );
 
-      print("🔓 Decrypted AES Key (Base64): ${base64Encode(decryptedAESKey)}");
+      print("🔐 Decrypted AES Key: ${base64Encode(decryptedAESKey)}");
 
-      // Decrypt the message
-      String decryptedMessage = decryptionService.decryptMessage(
+      if (lastMessage.isEmpty || iv.isEmpty) {
+        print('⚠️ Cannot decrypt: lastMessage or IV is empty');
+        return;
+      }
+
+      final decryptedMessage = decryptionService.decryptMessage(
         lastMessage, decryptedAESKey, iv,
       );
 
-      // Update the lastMessage
       lastMessage = decryptedMessage;
     } else {
-      print('Failed to fetch decryption key, status code: ${response.statusCode}');
+      print('🚫 Failed to fetch key: ${response.statusCode}');
     }
-  } catch (e) {
-    print('Error during decryption: $e');
+  } catch (e, st) {
+    print('❌ Decryption error: $e\n$st');
   }
 }
-
 
 }
