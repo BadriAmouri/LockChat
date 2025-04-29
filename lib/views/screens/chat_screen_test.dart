@@ -28,7 +28,7 @@ class ChatScreen extends StatelessWidget {
     print("🔐 Starting encryption and message sending...");
 
     // Get AES Key and Key ID from Key Rotation logic
-    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(57, 49, "kuroo");
+    Map<String, dynamic> keyData = await _keymanagementService.rotateKeyIfNeeded(88, 87, "bogum");
     Uint8List aesKey = keyData['aesKey'];
     String keyId = keyData['keyId'];
 
@@ -36,7 +36,7 @@ class ChatScreen extends StatelessWidget {
     print("🆔 AES Key ID: $keyId");
 
     // Encrypt the message
-    String message = "🌍 sup momo  !";
+    String message = "🌍 I M SO HAPPY  !";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
 
     String encryptedMessage = encryptedData['encryptedMessage']!;
@@ -47,9 +47,9 @@ class ChatScreen extends StatelessWidget {
 
     // Send Encrypted Message
     await MessageAPIService.sendEncryptedMessage(
-      senderId: "57",
-      recipientId: "49",
-      chatroomId: "7",
+      senderId: "88",
+      recipientId: "87",
+      chatroomId: "9",
       encryptedMessage: encryptedMessage,
       encryptedKey: keyId,
       iv: iv,
@@ -66,16 +66,16 @@ Future<void> decryptForRecipientTest() async {
     print("🧩 Starting decryption for recipient...");
 
     // Get recipient and sender keys
-    ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("momo");
-    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(57);
-    ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(49);
+    ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey("aesun");
+    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(88);
+    ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(87);
     print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
     print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
 
     final decryptionService = DecryptionService();
 
     // Fetch recipient's latest message
-    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient("49");
+    List<dynamic> recipientMessages = await MessageAPIService.getMessagesByRecipient("87");
 
     if (recipientMessages.isEmpty) {
       print("⚠️ No messages found for recipient.");
@@ -94,7 +94,7 @@ Future<void> decryptForRecipientTest() async {
 
     // Fetch Encrypted AES Key from Server
     final response = await http.get(
-      Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$keyId'),
+      Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$keyId'),
     );
 
     if (response.statusCode != 200) {
@@ -198,7 +198,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$encryptedKeyid'),
+    Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$encryptedKeyid'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -308,7 +308,7 @@ Future<void> testDecryption({
     print("First message of receipent iv fetched .");
     // Decrypt AES Key for Sender
     final encryptedKeyResponse = await http.get(
-    Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$encryptedKeyidrec'),
+    Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$encryptedKeyidrec'),
     );
 
    if (encryptedKeyResponse.statusCode == 200) {
@@ -366,10 +366,18 @@ Future<void> testDecryption({
     return Scaffold(
       appBar: AppBar(title: Text("Chat")),
       body: Center(
-        child: ElevatedButton(
+        child: Column(children: [
+          ElevatedButton(
           onPressed: sendMessageTest,
           child: Text("Send Encrypted Message"),
         ),
+          ElevatedButton(
+          onPressed: decryptForRecipientTest,
+          child: Text("Decrypt Encrypted Message"),
+        ),
+
+        ],)
+
       ),
     );
   }
