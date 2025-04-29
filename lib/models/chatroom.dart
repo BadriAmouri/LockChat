@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -13,7 +12,7 @@ class Chatroom {
   String name;
   String lastMessage;
   final String time;
-  final String imageUrl;
+  String imageUrl;
   final int unreadMessages;
   final String keyId;
   final String iv;
@@ -51,79 +50,111 @@ class Chatroom {
   }
 
   // Method to fetch the decryption key, decrypt the message, and update lastMessage
-  Future<void> decryptLastMessage(Map<String, dynamic> jsonres, DecryptionService decryptionService) async {
-    try {
-      print('🔍 Type of keyId: ${jsonres['encryption_key_id'].runtimeType}');
-      print('🔍 Type of iv: ${jsonres['iv'].runtimeType}');
-      print('🔍 Type of members id : ${jsonres['members'][1]['user_id'].runtimeType}');
-      print('🔍 Type of members id: ${jsonres['members'][1]['user_id'].runtimeType}');
-      final TokenStorage _tokenStorage = TokenStorage();
-      final userIdString = await _tokenStorage.getUserId();
-      final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
+Future<void> decryptLastMessage(Map<String, dynamic> jsonres, DecryptionService decryptionService) async {
+  try {
+    final TokenStorage _tokenStorage = TokenStorage();
+    final userIdString = await _tokenStorage.getUserId();
+    final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
 
-      if (userId == null) {
-        print('No valid access token available');
-        return;
-      }
-      // Determine if the current user is the sender or the recipient
-      bool isSender = userId == jsonres['members'][1]['user_id'];
-      bool isRecipient = userId == jsonres['members'][0]['user_id'];
+    if (userId == null) {
+      print('No valid access token available');
+      return;
+    }
 
-      if (!isSender && !isRecipient) {
-        print('User not found in this chatroom members');
-        return;
-      }
+    int lastMessageSenderId = jsonres['last_message_sender_id'];
+    int member0Id = jsonres['members'][0]['user_id'];
+    int member1Id = jsonres['members'][1]['user_id'];
 
-      // Fetch the private key based on whether the user is sender or recipient
-      KeyManagementService _keymanagementService = KeyManagementService();
-      ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(jsonres['members'][1]['user_id'] );
+    // Identify sender and recipient correctly
+    late int senderId;
+    late int recipientId;
+    late String senderName;
+    late String recipientName;
 
-      ECPrivateKey userPrivateKey;
-      if (isSender) {
-        userPrivateKey = await _keymanagementService.retrievePrivateKey(jsonres['members'][1]['name']);
-        name = jsonres['members'][0]['name'];
+    
+
+
+    if (lastMessageSenderId == member0Id) {
+      senderId = member0Id;
+      recipientId = member1Id;
+      senderName = jsonres['members'][0]['name'];
+      recipientName = jsonres['members'][1]['name'];
+     
+     
+      
+    } else if (lastMessageSenderId == member1Id) {
+      senderId = member1Id;
+      recipientId = member0Id;
+      senderName = jsonres['members'][1]['name'];
+      recipientName = jsonres['members'][0]['name'];
+
+    } else {
+      print('Sender not found in chat members!');
+      return;
+    }
+
+    // Determine if the current user is the sender or the recipient
+    bool isCurrentUserSender = (userId == senderId);
+    bool isCurrentUserRecipient = (userId == recipientId);
+
+    if (!isCurrentUserSender && !isCurrentUserRecipient) {
+      print('Current user is neither sender nor recipient.');
+      return;
+    }
+
+    // Fetch the sender's public key
+    KeyManagementService _keyManagementService = KeyManagementService();
+    ECPublicKey senderPublicKey = await _keyManagementService.retrievePublicKeyFromBackend(senderId);
+
+    // Fetch your private key
+    ECPrivateKey userPrivateKey;
+    if (isCurrentUserSender) {
+      userPrivateKey = await _keyManagementService.retrievePrivateKey(senderName);
+      name = recipientName; // Set the chatroom name to the recipient
+    
+    } else {
+      userPrivateKey = await _keyManagementService.retrievePrivateKey(recipientName);
+      name = senderName; // Set the chatroom name to the sender
+      
+    }
+
+    // Fetch the encryption key
+    final response = await http.get(
+      Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$keyId'),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> data = json.decode(response.body);
+
+      // Choose the correct encrypted key based on whether you are sender or recipient
+      String encryptedKey;
+      if (isCurrentUserSender) {
+        encryptedKey = data['encrypted_key_for_sender'];
       } else {
-        name = jsonres['members'][1]['name'];
-        userPrivateKey = await _keymanagementService.retrievePrivateKey(jsonres['members'][0]['name']);
+        encryptedKey = data['encrypted_key_for_recipient'];
       }
 
-      // Fetch the encryption key based on whether the user is sender or recipient
-      final response = await http.get(
-        Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$keyId'),
+      // Decrypt the AES key
+      Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
+        encryptedKey, userPrivateKey, senderPublicKey,
       );
 
-      if (response.statusCode == 200) {
-        Map<String, dynamic> data = json.decode(response.body);
+      print("🔓 Decrypted AES Key (Base64): ${base64Encode(decryptedAESKey)}");
 
-        // Extract the encrypted key for the recipient (based on the user's role)
-        String encryptedKeyForRecipient = '';
-      if (isSender) {
-        encryptedKeyForRecipient = data['encrypted_key_for_sender'];
-      } else {
-        encryptedKeyForRecipient = data['encrypted_key_for_recipient'];
-      }
+      // Decrypt the message
+      String decryptedMessage = decryptionService.decryptMessage(
+        lastMessage, decryptedAESKey, iv,
+      );
 
-
-        // Decrypt the AES key for the recipient using the decryption service
-        Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
-          encryptedKeyForRecipient, userPrivateKey, senderPublicKey
-        );
-
-        print("🔓 Decrypted AES Key (Base64): ${base64Encode(decryptedAESKey)}");
-
-        // Decrypt the message using the decrypted AES key
-        String decryptedMessage = decryptionService.decryptMessage(
-          lastMessage, decryptedAESKey, iv,
-        );
-
-        // Update the lastMessage with the decrypted message
-        lastMessage = decryptedMessage;
-      } else {
-        print('Failed to fetch decryption key, status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error during decryption: $e');
+      // Update the lastMessage
+      lastMessage = decryptedMessage;
+    } else {
+      print('Failed to fetch decryption key, status code: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Error during decryption: $e');
   }
+}
+
 
 }

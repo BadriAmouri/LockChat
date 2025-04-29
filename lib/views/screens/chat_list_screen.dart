@@ -8,7 +8,7 @@ import 'chat_screen_test.dart';
 import 'chat_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/jwt_handler.dart';
-
+import 'home.dart';
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -18,23 +18,35 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   late Future<List<Chatroom>> _chatroomsFuture;
+  List<Chatroom> allChats = [];     // ← Full list
+  List<Chatroom> filteredChats = []; // ← Search result list
 
   @override
-void initState() {
-  super.initState();
-  _loadChatrooms();
-}
+  void initState() {
+    super.initState();
+    _loadChatrooms();
+  }
 
-Future<void> _loadChatrooms() async {
+  Future<void> _loadChatrooms() async {
+    _chatroomsFuture = ChatService.fetchChatrooms();
+    final chats = await _chatroomsFuture;
+    setState(() {
+      allChats = chats;
+      filteredChats = chats; // initially show all
+    });
+  }
+
+  void _filterChats(String query) {
+    final results = allChats.where((chat) {
+      final nameLower = chat.name.toLowerCase();
+      final queryLower = query.toLowerCase();
+      return nameLower.contains(queryLower);
+    }).toList();
 
     setState(() {
-      _chatroomsFuture = ChatService.fetchChatrooms();
+      filteredChats = results;
     });
-
-}
-
-
-
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,11 +63,21 @@ Future<void> _loadChatrooms() async {
                 bottomRight: Radius.circular(30),
               ),
             ),
-            child: Column(
+            /* child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: const [
-                SizedBox(height: 30),
-                Text(
+              children: [
+
+                IconButton(
+                  icon: Icon(Icons.home, color: Colors.white, size: 28),
+                  onPressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    );
+                  },
+                    ),
+                const SizedBox(height: 30),
+                const Text(
                   'CHATLOCK',
                   style: TextStyle(
                     color: Colors.white,
@@ -63,10 +85,47 @@ Future<void> _loadChatrooms() async {
                     fontSize: 24,
                   ),
                 ),
-                SizedBox(height: 15),
-                SearchBarWidget(),
+                const SizedBox(height: 15),
+                // 🔥 Update: Make search bar functional
+                SearchBarWidget(
+                  onChanged: _filterChats, // <<<<<<<<<<<<<<<
+                ),
               ],
-            ),
+            ), */
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.menu, color: Colors.white, size: 28),
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HomeScreen()),
+                          );
+                        },
+                      ),
+                      const Text(
+                        'CHATLOCK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
+                      ),
+                      SizedBox(width: 48), // just to balance spacing on the right side
+      ],
+    ),
+    const SizedBox(height: 15),
+    SearchBarWidget(
+      onChanged: _filterChats,
+    ),
+  ],
+),
+
           ),
           const SizedBox(height: 2),
           Expanded(
@@ -81,21 +140,18 @@ Future<void> _loadChatrooms() async {
                   return const Center(child: Text('No chats found.'));
                 }
 
-                final chats = snapshot.data!;
                 return ListView.builder(
-                  itemCount: chats.length,
+                  itemCount: filteredChats.length,
                   itemBuilder: (context, index) {
-                    final chat = chats[index];
+                    final chat = filteredChats[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
-                        MaterialPageRoute(
-                        //maybe with the backendlogic we pass the id of the chat or smth 
-                        builder: (context) => ChatScreene(
-/*                           name: chat['name'],
-                          imageUrl: chat['imageUrl'], */
-                              ),
+                          MaterialPageRoute(
+                            builder: (context) => ChatScreene(
+                                // pass id or whatever you want later
+                                ),
                           ),
                         );
                       },
