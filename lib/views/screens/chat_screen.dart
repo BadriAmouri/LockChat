@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/services/socket_service.dart';
 import 'package:lockchat/views/theme/colors.dart';
 
 class ChatScreene extends StatefulWidget {
@@ -16,13 +17,44 @@ class _ChatScreeneState extends State<ChatScreene> {
   ];
 
   TextEditingController _messageController = TextEditingController();
+  final String currentUserId = '1'; // your user ID
+  final String recipientId = '2';   // recipient user ID
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen to incoming WebSocket messages
+    WebSocketService().socket?.on('receive_message', (data) {
+      if (data['senderId'].toString() == recipientId) {
+        setState(() {
+          messages.add({"isMe": false, "message": data['message']});
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    WebSocketService().dispose();
+    super.dispose();
+  }
 
   void sendMessage() {
     String text = _messageController.text.trim();
     if (text.isNotEmpty) {
+      // Send via WebSocket
+      WebSocketService().sendMessage(
+        senderId: currentUserId,
+        recipientId: recipientId,
+        message: text,
+      );
+
+      // Show message immediately in the UI
       setState(() {
         messages.add({"isMe": true, "message": text});
       });
+
       _messageController.clear();
     }
   }
@@ -72,7 +104,7 @@ class ChatBubble extends StatelessWidget {
   final bool isMe;
   final String message;
 
-  ChatBubble({required this.isMe, required this.message});
+  const ChatBubble({required this.isMe, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +113,15 @@ class ChatBubble extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 5),
         padding: EdgeInsets.all(12),
-        constraints: BoxConstraints(maxWidth: 250),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
           color: isMe ? Colors.purple : Colors.purple.shade300,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: isMe ? Radius.circular(20) : Radius.circular(0),
+            bottomRight: isMe ? Radius.circular(0) : Radius.circular(20),
+          ),
         ),
         child: Text(
           message,
@@ -99,12 +136,12 @@ class ChatInputField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
 
-  ChatInputField({required this.controller, required this.onSend});
+  const ChatInputField({required this.controller, required this.onSend});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
@@ -118,6 +155,7 @@ class ChatInputField extends StatelessWidget {
                 hintText: 'Type message here...',
                 border: InputBorder.none,
               ),
+              onSubmitted: (_) => onSend(),
             ),
           ),
           IconButton(

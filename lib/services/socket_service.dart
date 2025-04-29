@@ -1,63 +1,122 @@
-import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'dart:convert';
 
-class SocketService {
-  late io.Socket socket;
-  // the sender ID is the user ID 
-  void connect(String senderId) {
-    socket = io.io('http://localhost:3000', <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
+import 'package:http/http.dart' as http;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter/foundation.dart';
+
+class WebSocketService {
+  static final WebSocketService _instance = WebSocketService._internal();
+
+  factory WebSocketService() => _instance;
+
+  WebSocketService._internal();
+
+  IO.Socket? socket;
+
+  void connect({required String userId}) {
+    socket = IO.io(
+      'https://lockchat-backend.onrender.com',
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect() // Manual connect
+          .setQuery({'userId': userId}) // Send userId in query
+          .setExtraHeaders({
+            'Access-Control-Allow-Origin': '*',
+          }) // Optional for CORS in dev
+          .build(),
+    );
+
+    socket!.connect();
+
+    socket!.onConnect((_) {
+      debugPrint('🟢 Connected to WebSocket server as $userId');
     });
 
-    socket.connect();
-
-    socket.onConnect((_) {
-      print('Connected to server');
-      socket.emit("update_status", {"userId": senderId});
+    socket!.on('connected_message', (data) {
+      debugPrint('✅ Server says: ${data['message']}');
     });
 
-    socket.onDisconnect((_) => print('Disconnected from server'));
-  }
-  // here i need to get the recipientId 
-  void sendMessage(String senderId, String recipientId, String message) {
-    final messageId = DateTime.now().millisecondsSinceEpoch.toString();
-    socket.emit("send_message", {
-      "senderId": senderId,
-      "recipientId": recipientId,
-      "message": message,
-      "messageId": messageId,
+    socket!.on('receive_message', (data) {
+      debugPrint('📨 Received message: ${data['message']} from ${data['senderId']}');
     });
-  }
 
-  void onMessageReceived(Function(String senderId, String message) callback) {
-    socket.on("receive_message", (data) {
-      callback(data["senderId"], data["message"]);
+    socket!.on('typing', (data) {
+      debugPrint('✍️ ${data['senderId']} is typing...');
+    });
+
+    socket!.on('stop_typing', (data) {
+      debugPrint('🙅 ${data['senderId']} stopped typing.');
+    });
+
+    socket!.onDisconnect((_) {
+      debugPrint('🔴 Disconnected from server');
     });
   }
 
-  void onTyping(Function(String senderId) callback) {
-    socket.on("typing", (data) => callback(data["senderId"]));
+  void sendMessage({
+    required String senderId,
+    required String recipientId,
+    required String message,
+  }) {
+    if (socket != null && socket!.connected) {
+      socket!.emit('send_message', {
+        'senderId': senderId,
+        'recipientId': recipientId,
+        'message': message,
+      });
+      debugPrint('📤 Sent message to $recipientId: $message');
+    } else {
+      debugPrint('⚠️ Socket not connected. Cannot send message.');
+    }
   }
 
-  void onStopTyping(Function(String senderId) callback) {
-    socket.on("stop_typing", (data) => callback(data["senderId"]));
-  }
-
-  void onMessageStatusUpdate(Function(String messageId, String status) callback) {
-    socket.on("message_status_update", (data) {
-      callback(data["messageId"], data["status"]);
+  void emitTyping({required String senderId, required String recipientId}) {
+    socket?.emit('typing', {
+      'senderId': senderId,
+      'recipientId': recipientId,
     });
   }
 
-  void sendTyping(String senderId, String recipientId) {
-    socket.emit("typing", {"senderId": senderId, "recipientId": recipientId});
-  }
-
-  void stopTyping(String senderId, String recipientId) {
-    socket.emit("stop_typing", {"senderId": senderId, "recipientId": recipientId});
+  void emitStopTyping({required String senderId, required String recipientId}) {
+    socket?.emit('stop_typing', {
+      'senderId': senderId,
+      'recipientId': recipientId,
+    });
   }
 
   void disconnect() {
-    socket.disconnect();
+    socket?.disconnect();
   }
+
+  void dispose() {
+    socket?.dispose();
+    socket = null;
+  }
+
+
+Future<bool> checkUserConnection(String userId) async {
+  final url = Uri.parse('https://lockchat-backend.onrender.com/api/websocket/check-user-connection');
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      print("User connection status: ${data['isConnected']}");
+      return data['isConnected'] == true;
+    } else {
+      print('Server error: ${response.statusCode}');
+      return false;
+    }
+  } catch (e) {
+    print('Error checking user connection: $e');
+    return false;
+  }
+}
+
+
 }

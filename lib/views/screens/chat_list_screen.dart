@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/services/socket_service.dart';
 import '../../models/chatroom.dart';
 import '../../services/chat_service.dart';
 import '../widgets/chat_item.dart';
@@ -6,8 +7,6 @@ import '../widgets/search_bar_widget.dart';
 import '../theme/colors.dart';
 import 'chat_screen_test.dart';
 import 'chat_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../services/jwt_handler.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -20,21 +19,58 @@ class _ChatListScreenState extends State<ChatListScreen> {
   late Future<List<Chatroom>> _chatroomsFuture;
 
   @override
-void initState() {
-  super.initState();
-  _loadChatrooms();
-}
+  void initState() {
+    super.initState();
+    _loadChatrooms();
 
-Future<void> _loadChatrooms() async {
+    // Connect to the WebSocket with userId "1"
+    WebSocketService().connect(userId: '1');
 
+    
+    
+  }
+
+  Future<void> _loadChatrooms() async {
     setState(() {
       _chatroomsFuture = ChatService.fetchChatrooms();
     });
+  }
 
-}
+  Future<void> _handleChatTap(String recepient_id) async {
+    final isConnected = await WebSocketService().checkUserConnection(recepient_id); // 👈 your service method
+    final message = isConnected
+        ? 'The user is online. Starting chat...'
+        : 'The user is offline. You can still send messages.';
 
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isConnected ? 'Online' : 'Offline'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          )
+        ],
+      ),
+    );
 
-
+    // Navigate to ChatScreene regardless of status
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreene(
+          
+        ),
+      ),
+    );
+  }
+  @override
+  void dispose() {
+    WebSocketService().dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,18 +123,7 @@ Future<void> _loadChatrooms() async {
                   itemBuilder: (context, index) {
                     final chat = chats[index];
                     return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                        MaterialPageRoute(
-                        //maybe with the backendlogic we pass the id of the chat or smth 
-                        builder: (context) => ChatScreene(
-/*                           name: chat['name'],
-                          imageUrl: chat['imageUrl'], */
-                              ),
-                          ),
-                        );
-                      },
+                      onTap: () => _handleChatTap('2'),
                       child: ChatItem(
                         name: chat.name,
                         lastMessage: chat.lastMessage,
