@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lockchat/views/widgets/header_backButton.dart';
 import 'security_settings.dart';
 import 'two_factor_auth.dart';
+import 'change_profile_picture_screen.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -371,6 +372,44 @@ class _SettingsPageState extends State<SettingsPage>
                             ],
                           ),
                         ),
+                        
+                        // Change Profile Picture section
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: const BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: GestureDetector(
+                              onTap: () {
+                                // Navigate to Profile Picture Change Page
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ChangeProfilePictureScreen(), // (to be created)
+                                  ),
+                                );
+                              },
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: const [
+                                  Text(
+                                    'Change Profile Picture',
+                                    style: TextStyle(fontSize: 18),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
                       ],
                     ),
                   ),

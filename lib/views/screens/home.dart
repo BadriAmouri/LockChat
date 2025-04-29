@@ -4,7 +4,7 @@ import '../theme/colors.dart';
 import 'chat_screen_test.dart';
 import 'setting.dart';
 import 'incoming_requests.dart';
-
+import 'package:lockchat/views/screens/chat_list_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
                       // Navigate to chat page
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ChatScreen()),
+                        MaterialPageRoute(builder: (context) => ChatListScreen()),
                       );
                     },
                   ),
