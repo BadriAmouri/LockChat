@@ -89,7 +89,7 @@ class Chatroom {
 
       // Fetch the encryption key based on whether the user is sender or recipient
       final response = await http.get(
-        Uri.parse('http://10.80.1.239:5000/api/decryption/keys/$keyId'),
+        Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$keyId'),
       );
 
       if (response.statusCode == 200) {
