@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lockchat/services/socket_service.dart';
 import '../../models/chatroom.dart';
 import '../../services/chat_service.dart';
 import '../widgets/chat_item.dart';
@@ -6,9 +7,11 @@ import '../widgets/search_bar_widget.dart';
 import '../theme/colors.dart';
 import 'chat_screen_test.dart';
 import 'chat_screen.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/jwt_handler.dart';
 import 'home.dart';
+
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -25,16 +28,64 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void initState() {
     super.initState();
     _loadChatrooms();
+
+
+    // Connect to the WebSocket with userId "1"
+    WebSocketService().connect(userId: '1');
+
+    
+    
+  }
+
+  Future<void> _loadChatrooms() async {
+
   }
 
   Future<void> _loadChatrooms() async {
     _chatroomsFuture = ChatService.fetchChatrooms();
     final chats = await _chatroomsFuture;
+
     setState(() {
       allChats = chats;
       filteredChats = chats; // initially show all
     });
   }
+
+
+  Future<void> _handleChatTap(String recepient_id) async {
+    final isConnected = await WebSocketService().checkUserConnection(recepient_id); // 👈 your service method
+    final message = isConnected
+        ? 'The user is online. Starting chat...'
+        : 'The user is offline. You can still send messages.';
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isConnected ? 'Online' : 'Offline'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          )
+        ],
+      ),
+    );
+
+    // Navigate to ChatScreene regardless of status
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreene(
+          
+        ),
+      ),
+    );
+  }
+  @override
+  void dispose() {
+    WebSocketService().dispose();
+    super.dispose();
 
   void _filterChats(String query) {
     final results = allChats.where((chat) {
@@ -46,6 +97,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     setState(() {
       filteredChats = results;
     });
+
   }
 
   @override
@@ -145,16 +197,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   itemBuilder: (context, index) {
                     final chat = filteredChats[index];
                     return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatScreene(
-                                // pass id or whatever you want later
-                                ),
-                          ),
-                        );
-                      },
+
+                      onTap: () => _handleChatTap('2'),
+
                       child: ChatItem(
                         name: chat.name,
                         lastMessage: chat.lastMessage,
