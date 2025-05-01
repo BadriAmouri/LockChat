@@ -6,13 +6,18 @@ import '../../services/decryption_service.dart';
 
 class ChatService {
   static const String baseUrl = 'https://lock-chat-backend.vercel.app';
-  static const String endpoint = 'api/chatrooms/getAllChatrooms';
+   static const String getAllChatroomsEndpoint = 'api/chatrooms/getAllChatrooms';
+  static const String createChatroomEndpoint = 'api/chatrooms/createChatroom';
+  static const String fetchChatroomUsersEndpoint = 'api/chatrooms';
+  static const String leaveChatroomEndpoint = 'api/chatrooms';
+  static const String removeUserFromChatroomEndpoint = 'api/chatrooms';
+  static const String addUserToChatroomEndpoint = 'api/chatrooms';
 
   static Future<List<Chatroom>> fetchChatrooms() async {
     final jwtHandler = JwtHandler();
     print('jwtHandler object created');
     
-    final response = await jwtHandler.authenticatedGet(endpoint);
+    final response = await jwtHandler.authenticatedGet(getAllChatroomsEndpoint);
     print('authenticatedGet is called');
 
     if (response.statusCode == 200) {
@@ -31,6 +36,65 @@ class ChatService {
       return chatrooms;
     } else {
       throw Exception('Failed to load chatrooms: ${response.statusCode}');
+    }
+  }
+
+  static Future<int> createChatroom(String name, int creatorId, bool isPrivate) async {
+    final jwtHandler = JwtHandler();
+    final body = {
+      'name': name,
+      'creatorId': creatorId,
+      'isPrivate': isPrivate,
+    };
+
+    final response = await jwtHandler.authenticatedPost(createChatroomEndpoint, body);
+
+    if (response.statusCode == 201) {
+      final data = json.decode(response.body);
+      return data['chatroom'];
+    } else {
+      throw Exception('Failed to create chatroom: ${response.body}');
+    }
+  }
+
+  static Future<List<dynamic>> fetchChatroomUsers(String chatroomId) async {
+    final jwtHandler = JwtHandler();
+    final response = await jwtHandler.authenticatedGet('$fetchChatroomUsersEndpoint/$chatroomId/users');
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to fetch chatroom users: ${response.body}');
+    }
+  }
+
+  static Future<void> leaveChatroom(String chatroomId) async {
+    final jwtHandler = JwtHandler();
+    final body = {'chatroomId': chatroomId};
+    final response = await jwtHandler.authenticatedPost('$leaveChatroomEndpoint/$chatroomId/leave',body);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to leave chatroom: ${response.body}');
+    }
+  }
+
+  static Future<void> removeUserFromChatroom(String chatroomId, String userId) async {
+    final jwtHandler = JwtHandler();
+    final body = {'userId': userId};
+    final response = await jwtHandler.authenticatedPost('$removeUserFromChatroomEndpoint/$chatroomId/removeUser', body);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to remove user from chatroom: ${response.body}');
+    }
+  }
+
+  static Future<void> addUserToChatroom(String chatroomId, String userId) async {
+    final jwtHandler = JwtHandler();
+    final body = {'userId': userId};
+    final response = await jwtHandler.authenticatedPost('$addUserToChatroomEndpoint/$chatroomId/addUser', body);
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to add user to chatroom: ${response.body}');
     }
   }
 }

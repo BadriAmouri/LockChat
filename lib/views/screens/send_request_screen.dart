@@ -1,4 +1,3 @@
-// views/screens/send_request_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../widgets/user_result_item.dart';
@@ -19,35 +18,8 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
   bool _isLoading = false;
   final InvitationService _invitationService = InvitationService();
 
-  // Sample user data for local testing - in a real app, this would come from API
-  final List<Map<String, dynamic>> _allUsers = [
-    {'id': 10, 'username': 'alex_tech'},
-    {'id': 'user2', 'username': 'maria_design'},
-    {'id': 'user3', 'username': 'dev_master'},
-    {'id': 'user4', 'username': 'jay_smith'},
-    {'id': 'user5', 'username': 'app_lover'},
-    {'id': 'user6', 'username': 'flutter_fan'},
-    {'id': 'user7', 'username': 'code_ninja'},
-    {'id': 'user8', 'username': 'dart_expert'},
-    {'id': 'user9', 'username': 'moussa'},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  // Debounce search to avoid too many API calls
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+  Future<void> _performSearch() async {
+    final query = _searchController.text.trim();
 
     if (query.isEmpty) {
       setState(() {
@@ -62,54 +34,29 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
       _isLoading = true;
     });
 
-    // Using local search until API endpoint is available
-    // Note: In production, switch to API call
     try {
-      final results = _allUsers
-          .where((user) => user['username'].toLowerCase().contains(query))
-          .toList();
-      
-      // Simulate network delay
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          setState(() {
-            _searchResults = results;
-            _isLoading = false;
-          });
-        }
-      });
-    } catch (e) {
-      print('Error searching users: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
-
-    // Uncomment this section when API is ready
-    /*
-    _invitationService.searchUsers(query).then((results) {
+      final results = await _invitationService.searchUsers(query);
       if (mounted) {
         setState(() {
           _searchResults = results;
           _isLoading = false;
         });
       }
-    }).catchError((e) {
+    } catch (e) {
       print('Error searching users: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    });
-    */
+    }
   }
 
   Future<void> _sendRequest(int userId, String username) async {
     try {
       final result = await _invitationService.sendInvitation(userId);
-      print(result);
-      if (result) {
+
+      if (result != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Chat request sent to $username'),
@@ -141,30 +88,43 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Purple wave with PWA header
           HeaderWaveWidget(title: 'PWA', subtitle: 'Find Friends'),
 
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search for username',
-                prefixIcon: Icon(Icons.search, color: AppColors.darkpurple),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide.none,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search for username',
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.person, color: AppColors.darkpurple),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _performSearch,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: AppColors.darkpurple,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  child: const Icon(Icons.search, color: Colors.white),
+                ),
+              ],
             ),
           ),
 
-          // Search instructions or results
           Expanded(
-            child: _isLoading 
+            child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _isSearching
                     ? _searchResults.isEmpty
@@ -183,7 +143,7 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
                             itemBuilder: (context, index) {
                               final user = _searchResults[index];
                               return UserResultItem(
-                                username: user['username'],
+                                username: user['full_name'],
                                 onSendRequest: () => _sendRequest(
                                   user['id'],
                                   user['username'],
@@ -210,7 +170,7 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'Start typing to see results',
+                              'Enter a username and press search',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: AppColors.subtitle,

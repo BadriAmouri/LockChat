@@ -51,42 +51,64 @@ class InvitationService {
   }
 
   // Accept or decline an invitation
-  Future<bool> respondToInvitation(int invitationId, String action) async {
-    try {
-      final String endpoint = '$respondToInvitationBaseEndpoint/$invitationId/respond';
-      final response = await _jwtHandler.authenticatedPost(
-        endpoint,
-        {'action': action}, // action should be 'accept' or 'decline'
-      );
-
-      if (response.statusCode == 200) {
-        return true;
+  Future<Map<String, dynamic>?> respondToInvitation(int invitationId, String action) async {
+  try {
+    final String endpoint = '$respondToInvitationBaseEndpoint/$invitationId/respond';
+    final response = await _jwtHandler.authenticatedPost(
+      endpoint,
+      {'action': action}, // action should be 'accept' or 'decline'
+    );
+    print(response.statusCode);
+    print(response.body);
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      if (responseData['invitation'] != null) {
+        return responseData['invitation']; // return updated invitation
       } else {
-        print('Failed to respond to invitation: ${response.body}');
-        return false;
+        print('No updated invitation data found in response.');
+        return null;
       }
-    } catch (e) {
-      print('Error responding to invitation: $e');
-      return false;
+    } else {
+      print('Failed to respond to invitation: ${response.body}');
+      return null;
     }
+  } catch (e) {
+    print('Error responding to invitation: $e');
+    return null;
   }
+}
+
 
   // Search for users to invite
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
-    try {
-      final String searchEndpoint = 'api/users/search?query=$query';
-      final response = await _jwtHandler.authenticatedGet(searchEndpoint);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return List<Map<String, dynamic>>.from(data);
-      } else {
-        print('Failed to search users: ${response.body}');
-        return [];
-      }
-    } catch (e) {
-      print('Error searching users: $e');
+  try {
+    if (query.trim().isEmpty) {
+      print('Search query is empty');
       return [];
     }
+
+    final String encodedQuery = Uri.encodeQueryComponent(query);
+    final String searchEndpoint = 'api/users/searchUsers?query=$encodedQuery';
+
+    final response = await _jwtHandler.authenticatedGet(searchEndpoint);
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      if (data is List) {
+        return List<Map<String, dynamic>>.from(data);
+      } else {
+        print('Unexpected data format in response');
+        return [];
+      }
+    } else {
+      print('Failed to search users: ${response.statusCode} - ${response.body}');
+      return [];
+    }
+  } catch (e, stackTrace) {
+    print('Error searching users: $e');
+    print(stackTrace);
+    return [];
   }
+}
+
 }

@@ -1,5 +1,6 @@
 // views/screens/incoming_requests.dart
 import 'package:flutter/material.dart';
+import 'package:lockchat/services/chat_service.dart';
 import '../theme/colors.dart';
 import '../widgets/request_item.dart';
 import '../widgets/header_backButton.dart';
@@ -57,11 +58,13 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
   Future<void> _handleConfirm(int invitationId, String username) async {
     try {
       final result = await _invitationService.respondToInvitation(invitationId, 'accept');
-      
-      if (result) {
+      if (result != null) {
         setState(() {
           _requests.removeWhere((request) => request.invitationId == invitationId);
         });
+
+        await ChatService.createChatroom('private_chatroom',result['inviter_id'],true);
+
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -92,7 +95,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
     try {
       final result = await _invitationService.respondToInvitation(invitationId, 'decline');
       
-      if (result) {
+      if (result != null) {
         setState(() {
           _requests.removeWhere((request) => request.invitationId == invitationId);
         });
@@ -163,21 +166,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
                       icon: const Icon(Icons.refresh, color: AppColors.darkpurple),
                       tooltip: 'Refresh',
                     ),
-                    TextButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SendRequestScreen(),
-                          ),
-                        ).then((_) => _loadInvitations());
-                      },
-                      icon: const Icon(Icons.send, size: 18),
-                      label: const Text('Send Request'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.darkpurple,
-                      ),
-                    ),
+                    
                   ],
                 ),
               ],
@@ -207,13 +196,7 @@ class _ChatRequestListScreenState extends State<ChatRequestListScreen> {
                               ),
                             ),
                             SizedBox(height: 8),
-                            Text(
-                              'When someone invites you, it will appear here',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppColors.subtitle,
-                              ),
-                            ),
+                            
                           ],
                         ),
                       )
