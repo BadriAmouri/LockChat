@@ -103,7 +103,7 @@ class JwtHandler {
     }
     
     return http.post(
-      Uri.parse('$baseUrl/$endpoint'),
+      Uri.parse('https://lock-chat-backend.vercel.app/$endpoint'),
       headers: {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',

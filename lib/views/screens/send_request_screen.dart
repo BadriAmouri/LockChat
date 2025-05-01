@@ -1,8 +1,8 @@
-// views/screens/send_request_screen.dart
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../widgets/user_result_item.dart';
 import '../widgets/header_backButton.dart';
+import '../../services/invitation_service.dart';
 
 class SendRequestScreen extends StatefulWidget {
   const SendRequestScreen({super.key});
@@ -15,35 +15,11 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
+  bool _isLoading = false;
+  final InvitationService _invitationService = InvitationService();
 
-  // Sample user data - in a real app, this would come from a service or API
-  final List<Map<String, dynamic>> _allUsers = [
-    {'id': 'user1', 'username': 'alex_tech'},
-    {'id': 'user2', 'username': 'maria_design'},
-    {'id': 'user3', 'username': 'dev_master'},
-    {'id': 'user4', 'username': 'jay_smith'},
-    {'id': 'user5', 'username': 'app_lover'},
-    {'id': 'user6', 'username': 'flutter_fan'},
-    {'id': 'user7', 'username': 'code_ninja'},
-    {'id': 'user8', 'username': 'dart_expert'},
-    {'id': 'user9', 'username': 'moussa'},
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  @override
-  void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+  Future<void> _performSearch() async {
+    final query = _searchController.text.trim();
 
     if (query.isEmpty) {
       setState(() {
@@ -55,21 +31,55 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
 
     setState(() {
       _isSearching = true;
-      _searchResults =
-          _allUsers
-              .where((user) => user['username'].toLowerCase().contains(query))
-              .toList();
+      _isLoading = true;
     });
+
+    try {
+      final results = await _invitationService.searchUsers(query);
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error searching users: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
-  void _sendRequest(String userId, String username) {
-    // In a real app, you would send the request to a backend service
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Chat request sent to $username'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Future<void> _sendRequest(int userId, String username) async {
+    try {
+      final result = await _invitationService.sendInvitation(userId);
+
+      if (result != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Chat request sent to $username'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send request. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error sending request: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -78,84 +88,97 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Purple wave with PWA header
           HeaderWaveWidget(title: 'PWA', subtitle: 'Find Friends'),
 
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search for username',
-                prefixIcon: Icon(Icons.search, color: AppColors.darkpurple),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                  borderSide: BorderSide.none,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search for username',
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.person, color: AppColors.darkpurple),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _performSearch,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: AppColors.darkpurple,
+                    padding: const EdgeInsets.all(12),
+                  ),
+                  child: const Icon(Icons.search, color: Colors.white),
+                ),
+              ],
             ),
           ),
 
-          // Search instructions or results
           Expanded(
-            child:
-                _isSearching
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _isSearching
                     ? _searchResults.isEmpty
                         ? const Center(
-                          child: Text(
-                            'No users found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.subtitle,
+                            child: Text(
+                              'No users found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.subtitle,
+                              ),
                             ),
-                          ),
-                        )
+                          )
                         : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _searchResults.length,
-                          itemBuilder: (context, index) {
-                            final user = _searchResults[index];
-                            return UserResultItem(
-                              username: user['username'],
-                              onSendRequest:
-                                  () => _sendRequest(
-                                    user['id'],
-                                    user['username'],
-                                  ),
-                            );
-                          },
-                        )
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _searchResults.length,
+                            itemBuilder: (context, index) {
+                              final user = _searchResults[index];
+                              return UserResultItem(
+                                username: user['full_name'],
+                                onSendRequest: () => _sendRequest(
+                                  user['id'],
+                                  user['username'],
+                                ),
+                              );
+                            },
+                          )
                     : const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search,
-                            size: 64,
-                            color: AppColors.subtitle,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Search for users by username',
-                            style: TextStyle(
-                              fontSize: 18,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.search,
+                              size: 64,
                               color: AppColors.subtitle,
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Start typing to see results',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.subtitle,
+                            SizedBox(height: 16),
+                            Text(
+                              'Search for users by username',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: AppColors.subtitle,
+                              ),
                             ),
-                          ),
-                        ],
+                            SizedBox(height: 8),
+                            Text(
+                              'Enter a username and press search',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.subtitle,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
           ),
         ],
       ),
