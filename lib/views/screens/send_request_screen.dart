@@ -145,7 +145,7 @@ class _SendRequestScreenState extends State<SendRequestScreen> {
                               return UserResultItem(
                                 username: user['full_name'],
                                 onSendRequest: () => _sendRequest(
-                                  user['id'],
+                                  user['user_id'],
                                   user['username'],
                                 ),
                               );

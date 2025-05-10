@@ -3,6 +3,11 @@ import 'package:lockchat/services/socket_service.dart';
 import 'package:lockchat/views/theme/colors.dart';
 
 class ChatScreene extends StatefulWidget {
+   final String currentUserId;
+  final String recipientId;
+
+  ChatScreene({required this.currentUserId, required this.recipientId});
+
   @override
   _ChatScreeneState createState() => _ChatScreeneState();
 }
@@ -17,8 +22,8 @@ class _ChatScreeneState extends State<ChatScreene> {
   ];
 
   TextEditingController _messageController = TextEditingController();
-  final String currentUserId = '1'; // your user ID
-  final String recipientId = '2';   // recipient user ID
+  //final String currentUserId = '1'; // your user ID
+ // final String recipientId = '2';   // recipient user ID
 
   @override
   void initState() {
@@ -26,7 +31,7 @@ class _ChatScreeneState extends State<ChatScreene> {
 
     // Listen to incoming WebSocket messages
     WebSocketService().socket?.on('receive_message', (data) {
-      if (data['senderId'].toString() == recipientId) {
+      if (data['senderId'].toString() == widget.recipientId) {
         setState(() {
           messages.add({"isMe": false, "message": data['message']});
         });
@@ -45,8 +50,8 @@ class _ChatScreeneState extends State<ChatScreene> {
     if (text.isNotEmpty) {
       // Send via WebSocket
       WebSocketService().sendMessage(
-        senderId: currentUserId,
-        recipientId: recipientId,
+        senderId: widget.currentUserId ,
+        recipientId: widget.recipientId ,
         message: text,
       );
 

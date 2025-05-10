@@ -95,6 +95,7 @@ class InvitationService {
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       if (data is List) {
+        print('Search results: $data');
         return List<Map<String, dynamic>>.from(data);
       } else {
         print('Unexpected data format in response');

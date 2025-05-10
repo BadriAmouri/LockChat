@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lockchat/services/socket_service.dart';
+import 'package:lockchat/services/tokenStorage.dart';
 import '../../models/chatroom.dart';
 import '../../services/chat_service.dart';
 import '../widgets/chat_item.dart';
@@ -23,31 +24,66 @@ class _ChatListScreenState extends State<ChatListScreen> {
   late Future<List<Chatroom>> _chatroomsFuture;
   List<Chatroom> allChats = [];     // ← Full list
   List<Chatroom> filteredChats = []; // ← Search result list
+  late String recepient_id;
+
+  late Future<List<Map<String, dynamic>>> _chatroomsFuture2;
+List<Map<String, dynamic>> allChats2 = [];
+List<Map<String, dynamic>> filteredChats2 = [];
+late String? user_Id;
+
+  
 
   @override
-  void initState() {
+  void initState()  {
     super.initState();
     _loadChatrooms();
+    initWebSocketConnection();
 
 
-    // Connect to the WebSocket with userId "1"
-    WebSocketService().connect(userId: '1');
+       
 
     
     
   }
 
-  Future<void> _loadChatrooms() async {
+  //void setRecepientId(String userId) {
+  //recepient_id = userId == '89' ? '2' : '89';
 
+ // }
+  void initWebSocketConnection() async {
+  final TokenStorage _tokenStorage = TokenStorage();
+
+  user_Id = await _tokenStorage.getUserId();
+ // setRecepientId(user_Id!);
+  // print('Recepient ID: $recepient_id');
+
+  if (user_Id != null) {
+    print(' ❌❌❌❌  user_Id: $user_Id   ❌❌❌❌');
+    WebSocketService().connect(userId: "$user_Id");
+  } else {
+    print('❌ User ID not found');
   }
+}
+
+  
 
   Future<void> _loadChatrooms() async {
     _chatroomsFuture = ChatService.fetchChatrooms();
+    print(' ---------------  ---------------  ---------------  --------------- calling the Simplified chatrooms function   ---------------  ---------------  ---------------  ---------------  ---------------  --------------- ');
+    _chatroomsFuture2 = ChatService.fetchChatroomsSimplified();
+    final chats2 = await _chatroomsFuture2;
+    // Iterating over the list of chatrooms
+    print('${chats2[0]['chatroom_id']}');
+for (var chat in chats2) {
+  print('The id of the chatroom is: ${chat['chatroom_id']}');
+}
     final chats = await _chatroomsFuture;
+
 
     setState(() {
       allChats = chats;
       filteredChats = chats; // initially show all
+      allChats2 = chats2;
     });
   }
 
@@ -77,7 +113,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ChatScreene(
-          
+          currentUserId: user_Id.toString(),
+          recipientId: recepient_id,
         ),
       ),
     );
@@ -86,7 +123,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void dispose() {
     WebSocketService().dispose();
     super.dispose();
-
+  }
   void _filterChats(String query) {
     final results = allChats.where((chat) {
       final nameLower = chat.name.toLowerCase();
@@ -196,15 +233,21 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   itemCount: filteredChats.length,
                   itemBuilder: (context, index) {
                     final chat = filteredChats[index];
+                    final chatDetails = allChats2[index]; // Accessing corresponding chat details
+                    print('the first memebr id is: ${chatDetails['first_member_id']}');
+                    print('my user id is: $user_Id');
+
                     return GestureDetector(
 
-                      onTap: () => _handleChatTap('2'),
+                      onTap: () => _handleChatTap( chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim()
+      ? chatDetails['second_member_id'].toString()
+      : chatDetails['first_member_id'].toString(),),
 
                       child: ChatItem(
-                        name: chat.name,
-                        lastMessage: chat.lastMessage,
+                        name: chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim() ? chatDetails['second_member_name'] : chatDetails['first_member_name'],
+                        lastMessage: chatDetails['last_message'] ?? 'No messages yet',
                         time: chat.time,
-                        imageUrl: chat.imageUrl,
+                        imageUrl: chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim() ? chatDetails['second_member_image'] : chatDetails['first_member_image'],
                         unreadMessages: chat.unreadMessages,
                       ),
                     );
