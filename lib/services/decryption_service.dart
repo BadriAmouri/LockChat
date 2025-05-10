@@ -29,7 +29,7 @@ class DecryptionService {
     print("deriveAESKey - Shared Secret: \$sharedSecret");
     final sha256 = SHA256Digest();
     final aesKey = sha256.process(sharedSecret).sublist(0, 32);
-    print("Derived AES Key: \$aesKey");
+    print("Derived AES Key: $aesKey");
     return aesKey;
   }
 
