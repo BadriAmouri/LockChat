@@ -88,7 +88,7 @@ for (var chat in chats2) {
   }
 
 
-  Future<void> _handleChatTap(String recepient_id) async {
+  Future<void> _handleChatTap(String recepient_id , String chatroom_id , String SenderName , String RecipientName ,String first_member_id) async {
     final isConnected = await WebSocketService().checkUserConnection(recepient_id); // 👈 your service method
     final message = isConnected
         ? 'The user is online. Starting chat...'
@@ -107,6 +107,7 @@ for (var chat in chats2) {
         ],
       ),
     );
+    print('the chatroom id that we will pass is: $chatroom_id');
 
     // Navigate to ChatScreene regardless of status
     Navigator.push(
@@ -115,6 +116,9 @@ for (var chat in chats2) {
         builder: (context) => ChatScreene(
           currentUserId: user_Id.toString(),
           recipientId: recepient_id,
+          chatroomId : chatroom_id,
+          senderName :  first_member_id == user_Id.toString().trim() ? SenderName : RecipientName,
+          recipientName : first_member_id == user_Id.toString().trim() ? RecipientName : SenderName,
         ),
       ),
     );
@@ -241,8 +245,8 @@ for (var chat in chats2) {
 
                       onTap: () => _handleChatTap( chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim()
       ? chatDetails['second_member_id'].toString()
-      : chatDetails['first_member_id'].toString(),),
-
+      : chatDetails['first_member_id'].toString(),chatDetails['chatroom_id'].toString(),chatDetails['first_member_name'].toString(),chatDetails['second_member_name'].toString(),chatDetails['first_member_id'].toString().trim(),
+                      ),
                       child: ChatItem(
                         name: chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim() ? chatDetails['second_member_name'] : chatDetails['first_member_name'],
                         lastMessage: chatDetails['last_message'] ?? 'No messages yet',
