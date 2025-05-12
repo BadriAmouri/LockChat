@@ -68,8 +68,8 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         final Map<String, dynamic> responseBody = jsonDecode(storeKeyResponse.body);
         final String keyId = responseBody['insertedKeyId'];
 
-        // 🔐 Save AES key locally
-        await secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
+        // 🔐 Save AES key locally with consistent format
+        await secureStorage.write(key: "aesKey_${senderId}_$recipientId", value: base64Encode(aesKey));
 
         return {
           'aesKey': aesKey,
