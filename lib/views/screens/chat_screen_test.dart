@@ -36,7 +36,7 @@ class ChatScreen extends StatelessWidget {
     print("🆔 AES Key ID: $keyId");
 
     // Encrypt the message
-    String message = "🌍 I M SO HAPPY  !";
+    String message = "🌍 HELLO HELLO 🌍!";
     Map<String, String> encryptedData = _encryptionService.encryptMessage(message, aesKey);
 
     String encryptedMessage = encryptedData['encryptedMessage']!;

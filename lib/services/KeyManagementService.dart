@@ -58,8 +58,8 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
           body: jsonEncode({
             'senderId': senderId,
             'recipientId': recipientId,
-            'encryptedKeyForRecipient': encryptedKeyForRecipient,
-            'encryptedKeyForSender': encryptedKeyForSender,
+            'encryptedKeyForRecipient':  base64Encode(aesKey),
+            'encryptedKeyForSender':  base64Encode(aesKey),
           }),
         );
 
@@ -69,46 +69,76 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         final String keyId = responseBody['insertedKeyId'];
 
         // 🔐 Save AES key locally
-        await secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
+        await secureStorage.write(key: "aesKey_${senderId}_$recipientId", value: base64Encode(aesKey));
+        await secureStorage.write(key: "keyId_${senderId}_$recipientId", value: keyId);
 
         return {
           'aesKey': aesKey,
           'keyId': keyId,
         };
       } else {
-        // ✅ Fetch existing encryption key
-        final Uri fetchKeyUrl = Uri.parse(
-          'https://lock-chat-backend.vercel.app/api/encryption/getEncryptedKey',
-        ).replace(queryParameters: {
-          'userId': senderId.toString(),
-          'isSender': 'true',
-        });
+        // 🔁 Try to retrieve locally stored AES key
+        final String? base64Key = await secureStorage.read(key: "aesKey_${senderId}_$recipientId");
+        final String? keyIdString = await secureStorage.read(key: "keyId_${senderId}_$recipientId");
 
-        final existingKeyResponse = await http.get(fetchKeyUrl);
-        print("Fetch Existing Key Response: ${existingKeyResponse.body}");
-
-        if (existingKeyResponse.statusCode == 200) {
-          final Map<String, dynamic> responseData = jsonDecode(existingKeyResponse.body)['encryptedKey'];
-          final String encryptedKey = responseData['key'];
-          final String keyId = responseData['id'];
-
-          final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
-          final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
-
-          final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
-            encryptedKey, senderPrivateKey, senderPublicKey,
-          );
-
-          print("Decrypted AES Key: ${base64Encode(aesKey)}");
-
-          await secureStorage.write(key: "aesKey_$recipientId", value: base64Encode(aesKey));
+        if (base64Key != null && keyIdString != null) {
+          final Uint8List aesKey = base64Decode(base64Key);
+          print("AES KEY WHILE ENCRYPTION is  ${aesKey}");
 
           return {
             'aesKey': aesKey,
-            'keyId': keyId,
+            'keyId': keyIdString,
           };
         } else {
-          throw Exception("Failed to fetch existing encryption key.");
+          // 🔁 Try reversed key
+          final String? base64KeyReverse = await secureStorage.read(key: "aesKey_${recipientId}_$senderId");
+          final String? keyIdStringReverse = await secureStorage.read(key: "keyId_${recipientId}_$senderId");
+
+          if (base64KeyReverse != null && keyIdStringReverse != null) {
+            final Uint8List aesKey = base64Decode(base64KeyReverse);
+            print("AES KEY WHILE ENCRYPTION is  ${aesKey}");
+
+            return {
+              'aesKey': aesKey,
+              'keyId': keyIdStringReverse,
+            };
+          } else {
+            // 🌐 Fetch from backend as fallback
+            final Uri fetchKeyUrl = Uri.parse(
+              'https://lock-chat-backend.vercel.app/api/encryption/getEncryptedKey',
+            ).replace(queryParameters: {
+              'userId': senderId.toString(),
+              'isSender': 'true',
+            });
+
+            final existingKeyResponse = await http.get(fetchKeyUrl);
+            print("Fetch Existing Key Response: ${existingKeyResponse.body}");
+
+            if (existingKeyResponse.statusCode == 200) {
+              final Map<String, dynamic> responseData = jsonDecode(existingKeyResponse.body)['encryptedKey'];
+              final String encryptedKey = responseData['key'];
+              final String keyId = responseData['id'];
+
+              final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
+              final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
+
+              final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
+                encryptedKey, senderPrivateKey, senderPublicKey,
+              );
+
+              print("Decrypted AES Key: ${base64Encode(aesKey)}");
+
+              await secureStorage.write(key: "aesKey_${senderId}_$recipientId", value: base64Encode(aesKey));
+              await secureStorage.write(key: "keyId_${senderId}_$recipientId", value: keyId);
+
+              return {
+                'aesKey': aesKey,
+                'keyId': keyId,
+              };
+            } else {
+              throw Exception("Failed to fetch existing encryption key.");
+            }
+          }
         }
       }
     } else {
@@ -119,6 +149,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
     throw Exception("Unexpected error: $error");
   }
 }
+
 
 /* Future<ECPrivateKey> fetchSendertestPrivateKey() async {
   /* final String? privateKeyPem = await secureStorage.read(key: "privateKey"); */

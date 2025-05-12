@@ -67,9 +67,12 @@ Future<void> fetchMessages() async {
       final List<Map<String, dynamic>> decryptedMessages = await Future.wait(
         fetched.map((msg) async {
           print('🔑 Message Key: ${msg['encryption_key_id']}');
+          print('🔑 Message sent is : ${msg['encrypted_message']}');
+          print('🔑 Iv sent is : ${msg['iv']}');
           final decryptedMessage = await decryptReceivedMessageWithStoredaesKey(
             widget.senderName,
             int.parse(widget.recipientId),
+            msg['sender_id'],
             msg['encrypted_message'],
             msg['iv'],
             msg['encryption_key_id'],
