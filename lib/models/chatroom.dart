@@ -7,6 +7,7 @@ import '../../services/KeyManagementService.dart';
 import 'package:pointycastle/pointycastle.dart';
 import '../../services/jwt_handler.dart';
 import '../../services/tokenStorage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Chatroom {
   String name;
@@ -53,6 +54,7 @@ class Chatroom {
  Future<void> decryptLastMessage(Map<String, dynamic> jsonres, DecryptionService decryptionService) async {
   try {
     final TokenStorage _tokenStorage = TokenStorage();
+    final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
     final userIdString = await _tokenStorage.getUserId();
     final int? userId = userIdString != null ? int.tryParse(userIdString) : null;
 
@@ -102,15 +104,50 @@ class Chatroom {
       return;
     }
 
-    final keyService = KeyManagementService();
+    final storageKey = "aesKey_${senderId}_$recipientId";
+          // Check and read from secure storage
+    String? base64Key = await secureStorage.read(key: storageKey);
+    if (base64Key != null) {
+            // Convert Base64 string back to Uint8List
+            final Uint8List decryptedAESKey = base64Decode(base64Key);
+      if (lastMessage.isEmpty || iv.isEmpty) {
+        print('⚠️ Cannot decrypt: lastMessage or IV is empty');
+        return;
+      }
+
+      final decryptedMessage = decryptionService.decryptMessage(
+        lastMessage, decryptedAESKey, iv,
+      );
+
+      lastMessage = decryptedMessage;
+      print('last message ${lastMessage}');
+    } 
+    else {
+
+    final storageKey = "aesKey_${recipientId}_$senderId";
+          // Check and read from secure storage
+    String? base64Key = await secureStorage.read(key: storageKey);
+    if (base64Key != null) {
+            // Convert Base64 string back to Uint8List
+    final Uint8List decryptedAESKey = base64Decode(base64Key);
+    if (lastMessage.isEmpty || iv.isEmpty) {
+        print('⚠️ Cannot decrypt: lastMessage or IV is empty');
+        return;
+    }
+
+    final decryptedMessage = decryptionService.decryptMessage(
+        lastMessage, decryptedAESKey, iv,
+    );
+
+      lastMessage = decryptedMessage;
+      print('last message ${lastMessage}');
+    } 
+    else {
+
+        final keyService = KeyManagementService();
     final senderPublicKey = await keyService.retrievePublicKeyFromBackend(senderId);
     final userPrivateKey = await keyService.retrievePrivateKey(isCurrentUserSender ? senderName : recipientName);
-
-    // Set name & profile image accordingly
-    name = isCurrentUserSender ? recipientName : senderName;
-    imageUrl = isCurrentUserSender ? recipientPic : senderPic;
-
-    if (keyId.isEmpty) {
+        if (keyId.isEmpty) {
       print('🚫 No keyId provided');
       return;
     }
@@ -128,9 +165,10 @@ class Chatroom {
         return;
       }
 
-      final Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
+/*       final Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
         encryptedKey, userPrivateKey, senderPublicKey,
-      );
+      ); */
+      final Uint8List decryptedAESKey = base64Decode(encryptedKey);
 
       print("🔐 Decrypted AES Key: ${base64Encode(decryptedAESKey)}");
 
@@ -144,9 +182,22 @@ class Chatroom {
       );
 
       lastMessage = decryptedMessage;
+      print('last message ${lastMessage}');
     } else {
       print('🚫 Failed to fetch key: ${response.statusCode}');
     }
+
+    }
+
+    }
+
+
+
+    // Set name & profile image accordingly
+    name = isCurrentUserSender ? recipientName : senderName;
+    imageUrl = isCurrentUserSender ? recipientPic : senderPic;
+
+
   } catch (e, st) {
     print('❌ Decryption error: $e\n$st');
   }

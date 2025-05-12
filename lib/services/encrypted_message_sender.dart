@@ -18,9 +18,12 @@ import 'package:pointycastle/pointycastle.dart' as pc;
 import 'package:pointycastle/asymmetric/api.dart';
 import 'package:basic_utils/basic_utils.dart';
 import '../../services/tokenStorage.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 final EncryptionService _encryptionService = EncryptionService();
 final KeyManagementService _keymanagementService=KeyManagementService();
+final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
+
 Future<void> sendEncryptedMessage_local(int receipentid,String sendername,String message,int chatroomId)async {
   try {
     print("🔐 Starting encryption and message sending...");
@@ -139,7 +142,8 @@ Future<void> decryptReceivedMessage(String username,int othermemberid) async {
 
 Future<String> decryptReceivedMessageWithStoredaesKey(
   String username,
-  int othermemberid,
+  int receipentid,
+  int senderid,
   String messageData,
   String the_iv,
   String MessageKey,
@@ -156,7 +160,7 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
 
     // Get recipient and sender keys
     ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey(username);
-    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(othermemberid);
+    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(receipentid);
     ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(userId);
     print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
     print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
@@ -169,7 +173,50 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
     print("📨 Encrypted Message Received: $encryptedMessage");
     print("🧪 IV Received: $iv");
 
-    // Get the AES key from the backend
+
+    final storageKey = "aesKey_${senderid}_$receipentid";
+          // Check and read from secure storage
+    String? base64Key = await secureStorage.read(key: storageKey);
+    if (base64Key != null) {
+      print("The key in secure storage is not null");
+      // Convert Base64 string back to Uint8List
+      final Uint8List decryptedAESKey = base64Decode(base64Key);
+      if (encryptedMessage.isEmpty || iv.isEmpty) {
+        print('⚠️ Cannot decrypt: lastMessage or IV is empty');
+      }
+      print("AES KEY is  ${decryptedAESKey} ");
+      print("try to decrypt the message");
+      final decryptedMessage = decryptionService.decryptMessage(
+        encryptedMessage, decryptedAESKey, iv,
+      );
+      print('last message ${decryptedMessage}');
+      
+    return decryptedMessage;
+
+    } 
+    else{
+    
+    final storageKey = "aesKey_${receipentid}_$senderid";
+    // Check and read from secure storage
+    String? base64Key = await secureStorage.read(key: storageKey);
+    if (base64Key != null) {
+      print("The key in secure storage is not null");
+      // Convert Base64 string back to Uint8List
+      final Uint8List decryptedAESKey = base64Decode(base64Key);
+      if (encryptedMessage.isEmpty || iv.isEmpty) {
+        print('⚠️ Cannot decrypt: lastMessage or IV is empty');
+      }
+      final decryptedMessage = decryptionService.decryptMessage(
+        encryptedMessage, decryptedAESKey, iv,
+      );
+      print('last message ${decryptedMessage}');
+    
+    return decryptedMessage;
+
+    } 
+    else{
+
+       // Get the AES key from the backend
     final response = await http.get(
       Uri.parse('https://lock-chat-backend.vercel.app/api/decryption/keys/$MessageKey'),
     );
@@ -183,13 +230,14 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
     print("🔒 Encrypted AES Key for Recipient: $encryptedKeyForRecipient");
 
     // Decrypt AES Key using recipient's private + sender's public
-    Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
+  /*   Uint8List decryptedAESKey = decryptionService.decryptAESKeyForRecipient(
       encryptedKeyForRecipient,
       recipientPrivateKey,
       senderPublicKey,
-    );
+    ); */
+    final Uint8List decryptedAESKey = base64Decode(encryptedKeyForRecipient);
 
-    print("🔓 Decrypted AES Key (Base64): ${base64Encode(decryptedAESKey)}");
+    print("🔓 Decrypted AES Key (Base64): ${(decryptedAESKey)}");
 
     // Validate input
     if (encryptedMessage.isEmpty || iv.isEmpty) {
@@ -203,10 +251,16 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
       decryptedAESKey,
       iv,
     );
-
     print("✅ Decrypted Message: $decryptedMessage");
     return decryptedMessage;
 
+
+
+    }
+
+    }
+
+  
   } catch (e) {
     print("❌ Error during recipient decryption: $e");
     return "Error: $e";

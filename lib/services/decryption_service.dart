@@ -6,7 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class DecryptionService {
   final _storage = const FlutterSecureStorage();
-
+  final FlutterSecureStorage secureStorage = const FlutterSecureStorage();
   Uint8List bigIntToUint8List(BigInt number) {
     print("bigIntToUint8List - Converting BigInt: \$number");
     final byteData = number.toRadixString(16).padLeft(64, '0');
