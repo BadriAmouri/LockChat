@@ -142,7 +142,8 @@ Future<void> decryptReceivedMessage(String username,int othermemberid) async {
 
 Future<String> decryptReceivedMessageWithStoredaesKey(
   String username,
-  int othermemberid,
+  int receipentid,
+  int senderid,
   String messageData,
   String the_iv,
   String MessageKey,
@@ -159,7 +160,7 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
 
     // Get recipient and sender keys
     ECPrivateKey recipientPrivateKey = await _keymanagementService.retrievePrivateKey(username);
-    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(othermemberid);
+    ECPublicKey senderPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(receipentid);
     ECPublicKey recipientPublicKey = await _keymanagementService.retrievePublicKeyFromBackend(userId);
     print('[SENDER] recipientPublicKey.Q: ${recipientPublicKey.Q}');
     print('[RECIPIENT] senderPublicKey.Q: ${senderPublicKey.Q}');
@@ -173,7 +174,8 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
     print("🧪 IV Received: $iv");
 
 
-    final storageKey = "aesKey_${userId}_$othermemberid";
+    final storageKey = "aesKey_${senderid}_$receipentid";
+
           // Check and read from secure storage
     String? base64Key = await secureStorage.read(key: storageKey);
     if (base64Key != null) {
@@ -195,7 +197,9 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
     } 
     else{
     
-    final storageKey = "aesKey_${othermemberid}_$userId";
+
+    final storageKey = "aesKey_${receipentid}_$senderid";
+
     // Check and read from secure storage
     String? base64Key = await secureStorage.read(key: storageKey);
     if (base64Key != null) {
