@@ -3,6 +3,9 @@ import 'package:lockchat/views/widgets/header_backButton.dart';
 import 'security_settings.dart';
 import 'two_factor_auth.dart';
 import 'change_profile_picture_screen.dart';
+import 'package:lockchat/services/tokenStorage.dart';
+import 'package:lockchat/services/auth_service.dart';
+import 'login.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -93,13 +96,52 @@ class _SettingsPageState extends State<SettingsPage>
     }
   }
 
-  void _logout() {
-    // TODO: Implement actual logout logic
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Logging out...')));
-    // Navigate to login page or clear session
-    Navigator.of(context).pushReplacementNamed('/login');
+  void _logout() async {
+    try {
+      final tokenStorage = TokenStorage();
+      final refreshToken = await tokenStorage.getRefreshToken();
+      
+      if (refreshToken == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No active session found')),
+          );
+        }
+        return;
+      }
+
+      final authService = AuthService();
+      final result = await authService.logout(refreshToken);
+
+      if (result['success']) {
+        // Clear stored tokens
+        await tokenStorage.clearTokens();
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logged out successfully')),
+          );
+          // Navigate to login page using MaterialPageRoute
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false, // This removes all previous routes
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['error'] ?? 'Logout failed')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error during logout: $e')),
+        );
+      }
+    }
   }
 
   void _toggleUsernameField() {

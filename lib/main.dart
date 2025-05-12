@@ -12,10 +12,18 @@ import 'views/screens/signup.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://goecluaeedztfvcioywx.supabase.co', // Replace with your Supabase project URL
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZWNsdWFlZWR6dGZ2Y2lveXd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzODAyNzgsImV4cCI6MjA2MTk1NjI3OH0.K-qME01OkIFZN4ySd6culSpj5mPqU37mnoPQhD-dvBo',    // Replace with your anon/public key
-  );
+
+  try {
+    print('🚀 Initializing Supabase...');
+    await Supabase.initialize(
+      url: 'https://goecluaeedztfvcioywx.supabase.co',
+      anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZWNsdWFlZWR6dGZ2Y2lveXd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzODAyNzgsImV4cCI6MjA2MTk1NjI3OH0.K-qME01OkIFZN4ySd6culSpj5mPqU37mnoPQhD-dvBo',
+    );
+    print('✅ Supabase initialized successfully');
+  } catch (e) {
+    print('❌ Error initializing Supabase: $e');
+  }
+
 
   runApp(const MyApp());
 }

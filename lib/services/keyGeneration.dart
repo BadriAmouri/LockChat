@@ -53,60 +53,84 @@ static Uint8List _generateRandomBytes(int length) {
 
   /// Generate, store private key securely, and send public key to backend
   static Future<Map<String, dynamic>> generateAndStoreKeyPair(
-    String username, String email, String password) async {
-  try {
-    final keyPair = _generateKeyPair();
-    final publicKeyPem = _encodePublicKeyToPem(keyPair.publicKey);
-    final privateKeybase64 = _encodePrivateKeyToBase64(keyPair.privateKey);
+    String username,
+    String email,
+    String password, {
+    String? fullName,
+    String? profileImageUrl,
+  }) async {
+    try {
+      final keyPair = _generateKeyPair();
+      final publicKeyPem = _encodePublicKeyToPem(keyPair.publicKey);
+      final privateKeybase64 = _encodePrivateKeyToBase64(keyPair.privateKey);
 
-    // Store private key securely
-    await _secureStorage.write(
-      key: 'privateKey_$username',
-      value: privateKeybase64,
-    );
+      
+      print("🔑 Username: $username");
+      print("🔑 Email: $email");
+      print("🔑 Full Name: $fullName");
+      print("🔑 Profile Image URL: $profileImageUrl");
 
-    // Send public key to backend and get response
-    final response = await _sendPublicKeyToBackend(
-      username,
-      publicKeyPem,
-      email,
-      password,
-    );
+      // Store private key securely
+      await _secureStorage.write(
+        key: 'privateKey_$username',
+        value: privateKeybase64,
+      );
 
-    return response; // Contains success/failure and possibly error message
-  } catch (e) {
-    return {'success': false, 'error': 'Unexpected error: $e'};
+      // Send public key to backend and get response
+      final response = await _sendPublicKeyToBackend(
+        username,
+        publicKeyPem,
+        email,
+        password,
+        fullName: fullName,
+        profileImageUrl: profileImageUrl,
+      );
+
+      return response; // Contains success/failure and possibly error message
+    } catch (e) {
+      return {'success': false, 'error': 'Unexpected error: $e'};
+    }
   }
-}
 
   /// Send the public key to the backend
   static Future<Map<String, dynamic>> _sendPublicKeyToBackend(
     String username,
     String publicKeyPem,
     String email,
-    String password) async {
-  final url = Uri.parse('https://lock-chat-backend.vercel.app/auth/register');
+    String password, {
+    String? fullName,
+    String? profileImageUrl,
+  }) async {
+    final url = Uri.parse('https://lock-chat-backend.vercel.app/auth/register');
 
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({
-      'username': username,
-      'publicKey': publicKeyPem,
-      'email': email,
-      'password': password,
-    }),
-  );
+     
+      print("🔑 Username: $username");
+      print("🔑 Email: $email");
+      print("🔑 Full Name  From send to backend ***********************: $fullName");
+      print("🔑 Profile Image URL: $profileImageUrl");
 
-  if (response.statusCode == 200) {
-    final body = jsonDecode(response.body);
-    if (body['success'] == true) {
-      return {'success': true};
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'publicKey': publicKeyPem,
+        'email': email,
+        'password': password,
+        'fullName': fullName,
+        'profileImageUrl': profileImageUrl,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(response.body);
+      if (body['success'] == true) {
+        return {'success': true};
+      } else {
+        return {'success': false, 'error': body['error'] ?? 'Unknown error'};
+      }
     } else {
-      return {'success': false, 'error': body['error'] ?? 'Unknown error'};
+      return {'success': false, 'error': 'HTTP ${response.statusCode}: ${response.body}'};
     }
-  } else {
-    return {'success': false, 'error': 'HTTP ${response.statusCode}: ${response.body}'};
   }
-}
 }

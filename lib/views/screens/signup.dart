@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/colors.dart';
 import '../widgets/header.dart';
 import 'login.dart';
@@ -13,34 +16,112 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false;
 
   // Error messages
+  String? _fullNameError;
   String? _usernameError;
   String? _emailError;
   String? _passwordError;
 
+  Future<String?> _uploadProfileImage() async {
+    if (_profileImage == null) return null;
+
+    try {
+      final supabase = Supabase.instance.client;
+      final fileBytes = await _profileImage!.readAsBytes();
+      final fileExt = _profileImage!.path.split('.').last;
+      final fileName = 'user_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+
+      // Upload file
+      await supabase.storage.from('profilepictures').uploadBinary(
+        fileName,
+        fileBytes,
+        fileOptions: FileOptions(
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'image/$fileExt',
+        ),
+      );
+
+      // Get public URL
+      final publicUrl = supabase.storage.from('profilepictures').getPublicUrl(fileName);
+
+      if (publicUrl.isEmpty) {
+        throw Exception('Failed to get public URL');
+      }
+
+      return publicUrl;
+    } catch (e) {
+      print('❌ Error in _uploadProfileImage: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to upload profile image: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return null;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to pick image. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
+    _fullNameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  // Validation methods
   bool _validateInputs() {
     bool isValid = true;
 
     // Reset errors
     setState(() {
+      _fullNameError = null;
       _usernameError = null;
       _emailError = null;
       _passwordError = null;
     });
+
+    // Full name validation
+    if (_fullNameController.text.isEmpty) {
+      setState(() {
+        _fullNameError = 'Full name is required';
+      });
+      isValid = false;
+    }
 
     // Username validation
     if (_usernameController.text.isEmpty) {
@@ -48,11 +129,9 @@ class _SignupScreenState extends State<SignupScreen> {
         _usernameError = 'Username is required';
       });
       isValid = false;
-
-      //backend team check that it is unique i've put moussa to facilitate
     } else if (_usernameController.text.trim() == 'moussa') {
       setState(() {
-        _usernameError = 'Username "moussa" is already taken';
+        _usernameError = 'Username is already taken';
       });
       isValid = false;
     }
@@ -143,11 +222,72 @@ class _SignupScreenState extends State<SignupScreen> {
                     margin: const EdgeInsets.only(top: 8, bottom: 24),
                   ),
 
+                  // Profile Picture Section
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: AppColors.darkpurple.withOpacity(0.1),
+                          backgroundImage: _profileImage != null
+                              ? FileImage(_profileImage!)
+                              : null,
+                          child: _profileImage == null
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: AppColors.darkpurple,
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.darkpurple,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              onPressed: _pickImage,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Full name field
+                        TextField(
+                          controller: _fullNameController,
+                          decoration: InputDecoration(
+                            labelText: 'Full Name',
+                            hintText: 'Enter your full name',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 20,
+                            ),
+                            errorText: _fullNameError,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
                         // Username field
                         TextField(
                           controller: _usernameController,
@@ -226,22 +366,44 @@ class _SignupScreenState extends State<SignupScreen> {
                   // Create Account button
                   Center(
                     child: ElevatedButton(
-                      onPressed: () async {
+                      onPressed: _isLoading ? null : () async {
                         if (_validateInputs()) {
+                          setState(() {
+                            _isLoading = true;
+                          });
+
                           try {
-                            final result =
-                                await KeyGenerationService.generateAndStoreKeyPair(
-                                  _usernameController.text.trim(),
-                                  _emailController.text.trim(),
-                                  _passwordController.text,
-                                );
+                            // Upload profile image if exists
+                            final imageUrl = await _uploadProfileImage();
+                            print('🖼️ Image URL before registration: $imageUrl'); // Debug print
+
+                            if (_profileImage != null && imageUrl == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to upload profile image. Please try again.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              setState(() {
+                                _isLoading = false;
+                              });
+                              return;
+                            }
+
+                            final result = await KeyGenerationService.generateAndStoreKeyPair(
+                              _usernameController.text.trim(),
+                              _emailController.text.trim(),
+                              _passwordController.text,
+                              fullName: _fullNameController.text.trim(),
+                              profileImageUrl: imageUrl,
+                            );
+
+                            print('📝 Registration result: $result'); // Debug print
 
                             if (result['success']) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                    'Account created successfully!',
-                                  ),
+                                  content: Text('Account created successfully!'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -255,20 +417,23 @@ class _SignupScreenState extends State<SignupScreen> {
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    "Signup failed: ${result['error']}",
-                                  ),
+                                  content: Text("Signup failed: ${result['error']}"),
                                   backgroundColor: Colors.red,
                                 ),
                               );
                             }
                           } catch (e) {
+                            print('❌ Error during registration: $e'); // Debug print
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text("Unexpected error: $e"),
                                 backgroundColor: Colors.red,
                               ),
                             );
+                          } finally {
+                            setState(() {
+                              _isLoading = false;
+                            });
                           }
                         }
                       },
@@ -287,7 +452,16 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text('Create Account'),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text('Create Account'),
                     ),
                   ),
 

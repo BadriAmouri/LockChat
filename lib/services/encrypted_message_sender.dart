@@ -175,6 +175,7 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
 
 
     final storageKey = "aesKey_${senderid}_$receipentid";
+
           // Check and read from secure storage
     String? base64Key = await secureStorage.read(key: storageKey);
     if (base64Key != null) {
@@ -196,7 +197,9 @@ Future<String> decryptReceivedMessageWithStoredaesKey(
     } 
     else{
     
+
     final storageKey = "aesKey_${receipentid}_$senderid";
+
     // Check and read from secure storage
     String? base64Key = await secureStorage.read(key: storageKey);
     if (base64Key != null) {
