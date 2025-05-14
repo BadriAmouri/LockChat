@@ -123,9 +123,10 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
               final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
               final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
 
-              final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
+           /*    final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
                 encryptedKey, senderPrivateKey, senderPublicKey,
-              );
+              ); */
+              final Uint8List aesKey = base64Decode(encryptedKey);
 
               print("Decrypted AES Key: ${base64Encode(aesKey)}");
 
