@@ -8,6 +8,7 @@ class TokenStorage {
   static const String _userid = 'user_id';
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
+  static const String _usernameKey = 'username';
   
   // Save tokens
   Future<void> saveTokens(String accessToken, String refreshToken) async {
@@ -19,15 +20,24 @@ class TokenStorage {
   Future<void> saveUserId(String userid) async {
     await _storage.write(key: _userid, value: userid);
   }
+
+  Future<void> saveUsername(String username) async {
+    await _storage.write(key: _usernameKey, value: username);
+  }
   
   // Get access token
   Future<String?> getAccessToken() async {
     return await _storage.read(key: _accessTokenKey);
   }
+
   Future<String?> getUserId() async {
     return await _storage.read(key: _userid);
   }
   
+  // Get username
+  Future<String?> getUsername() async {
+    return await _storage.read(key: _usernameKey);
+  }
   
   // Get refresh token
   Future<String?> getRefreshToken() async {
@@ -38,5 +48,6 @@ class TokenStorage {
   Future<void> clearTokens() async {
     await _storage.delete(key: _accessTokenKey);
     await _storage.delete(key: _refreshTokenKey);
+    await _storage.delete(key: _usernameKey);
   }
 }

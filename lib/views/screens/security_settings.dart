@@ -4,6 +4,10 @@ import '../theme/colors.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/header_backButton.dart';
 import '../widgets/password_field_widget.dart';
+import '../../services/auth_service.dart';
+import '../../services/tokenStorage.dart';
+import 'home.dart';
+import 'dart:convert';
 
 class SecuritySettingsScreen extends StatefulWidget {
   const SecuritySettingsScreen({Key? key}) : super(key: key);
@@ -17,7 +21,9 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  bool _twoFactorEnabled = false;
+  bool _isLoading = false;
+  final AuthService _authService = AuthService();
+  final TokenStorage _tokenStorage = TokenStorage();
 
   @override
   void dispose() {
@@ -27,22 +33,124 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     super.dispose();
   }
 
-  void _updatePassword() {
+  Future<void> _updatePassword() async {
     if (_formKey.currentState!.validate()) {
-      // Password update logic would go here
+      setState(() {
+        _isLoading = true;
+      });
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password updated successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      try {
+        // Get the current username from token storage
+        final username = await _tokenStorage.getUsername();
+        if (username == null) {
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Error'),
+                content: const Text('Could not retrieve username. Please try logging in again.'),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
 
-      // Clear the fields after successful update
-      _currentPasswordController.clear();
-      _newPasswordController.clear();
-      _confirmPasswordController.clear();
+        final result = await _authService.resetPassword(
+          username,
+          _currentPasswordController.text,
+          _newPasswordController.text,
+        );
+
+        if (result['success']) {
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Success'),
+                content: Text(result['message']),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      // Clear the fields
+                      _currentPasswordController.clear();
+                      _newPasswordController.clear();
+                      _confirmPasswordController.clear();
+                      // Navigate to home screen and remove all previous routes
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        (route) => false,
+                      );
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Error'),
+                content: Text(result['error']),
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Error updating password: $e'),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -131,62 +239,17 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
 
                       // Update Button
                       Center(
-                        child: CustomButton(
-                          text: '   Update    ',
-                          onPressed: _updatePassword,
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator()
+                            : CustomButton(
+                                text: 'Update Password',
+                                onPressed: _updatePassword,
+                              ),
                       ),
 
                       const SizedBox(height: 40),
                       const Divider(color: Colors.black26),
                       const SizedBox(height: 20),
-
-                      // Two Factor Authentication
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Two-Factor Authentication',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          Switch(
-                            value: _twoFactorEnabled,
-                            onChanged: (value) {
-                              setState(() {
-                                _twoFactorEnabled = value;
-                              });
-                              // Logic for enabling/disabling 2FA
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Two-factor authentication ${value ? 'enabled' : 'disabled'}',
-                                  ),
-                                ),
-                              );
-                            },
-                            activeColor: AppColors.darkpurple,
-                            activeTrackColor: AppColors.darkpurple.withOpacity(
-                              0.4,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      if (_twoFactorEnabled)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            'Two-factor authentication adds an extra layer of security to your account by requiring a verification code in addition to your password.',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),

@@ -231,7 +231,4 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
     throw Exception("❌ Error while decoding public key: $e");
   }
 }
-
-
-
 }
