@@ -8,7 +8,6 @@ import '../../services/tokenStorage.dart';
 import '../theme/colors.dart';
 import '../widgets/header.dart';
 import 'signup.dart';
-import 'two_factor_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -80,20 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
         result['accessToken'],
         result['refreshToken'],
       );
-
-      await _tokenStorage.saveTokens(
-        result['accessToken'],
-        result['refreshToken'],
-      );
       await _tokenStorage.saveUserId(result['user_id'].toString());
-
-
-
-      
-      final storedAccessToken = await _tokenStorage.getAccessToken();
-      print(
-        "🟢 [DEBUG] Access Token Stored Securely: 🔐\n$storedAccessToken\n",
-      );
+      await _tokenStorage.saveUsername(username);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

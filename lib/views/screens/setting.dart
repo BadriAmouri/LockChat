@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lockchat/views/widgets/header_backButton.dart';
 import 'security_settings.dart';
-import 'two_factor_auth.dart';
 import 'change_profile_picture_screen.dart';
 import 'package:lockchat/services/tokenStorage.dart';
 import 'package:lockchat/services/auth_service.dart';
@@ -393,16 +392,7 @@ class _SettingsPageState extends State<SettingsPage>
                                                 ),
                                                 const SizedBox(height: 8),
                                                 ElevatedButton(
-                                                  onPressed: () {
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (context) =>
-                                                                TwoFactorAuthenticationScreen(),
-                                                      ),
-                                                    );
-                                                  },
+                                                  onPressed: _saveEmail,
                                                   child: const Text('Save'),
                                                 ),
                                               ],

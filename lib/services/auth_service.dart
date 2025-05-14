@@ -101,4 +101,38 @@ class AuthService {
       };
     }
   }
+  
+  // Reset password method
+  Future<Map<String, dynamic>> resetPassword(String username, String oldPassword, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/resetPassword'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        }),
+      );
+      
+      final responseData = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Password reset failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Connection error: ${e.toString()}',
+      };
+    }
+  }
 } 
