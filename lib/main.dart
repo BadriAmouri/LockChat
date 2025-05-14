@@ -12,6 +12,7 @@ import 'views/screens/signup.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+
   try {
     print('🚀 Initializing Supabase...');
     await Supabase.initialize(
@@ -22,6 +23,7 @@ void main() async {
   } catch (e) {
     print('❌ Error initializing Supabase: $e');
   }
+
 
   runApp(const MyApp());
 }

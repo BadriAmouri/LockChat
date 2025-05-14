@@ -201,14 +201,32 @@ for (var chat in chats2) {
                           );
                         },
                       ),
-                      const Text(
+                      
+
+                  Text(
+                  "PWA",
+                  style: const TextStyle(
+                    fontSize: 45,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(2, 2),
+                        blurRadius: 3,
+                        color: Colors.black12,
+                      ),
+                    ],
+                  ),
+                ),
+
+         /*              const Text(
                         'CHATLOCK',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 24,
                         ),
-                      ),
+                      ), */
                       SizedBox(width: 48), // just to balance spacing on the right side
       ],
     ),
@@ -249,7 +267,7 @@ for (var chat in chats2) {
                       ),
                       child: ChatItem(
                         name: chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim() ? chatDetails['second_member_name'] : chatDetails['first_member_name'],
-                        lastMessage: chatDetails['last_message'] ?? 'No messages yet',
+                        lastMessage: chat.lastMessage ?? 'No messages yet',
                         time: chat.time,
                         imageUrl: chatDetails['first_member_id'].toString().trim() == user_Id.toString().trim() ? chatDetails['second_member_image'] : chatDetails['first_member_image'],
                         unreadMessages: chat.unreadMessages,
