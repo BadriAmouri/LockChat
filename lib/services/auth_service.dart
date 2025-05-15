@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   // Replace with your actual API base URL
-  final String baseUrl = 'https://lock-chat-backend.vercel.app/auth';
+  final String baseUrl = 'http://10.80.4.151:5000/auth';
   
   // Login method
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -133,6 +133,50 @@ class AuthService {
         'success': false,
         'error': 'Connection error: ${e.toString()}',
       };
+    }
+  }
+  
+  // Update username method
+  Future<Map<String, dynamic>> updateUsername(String currentUsername, String newUsername) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/updateusername'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': currentUsername,
+          'newUsername': newUsername,
+        }),
+      );
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': responseData['message']};
+      } else {
+        return {'success': false, 'error': responseData['error'] ?? 'Failed to update username'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEmail(String username, String newEmail, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/updateuseremail'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'newEmail': newEmail,
+          'password': password,
+        }),
+      );
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': responseData['message']};
+      } else {
+        return {'success': false, 'error': responseData['error'] ?? 'Failed to update email'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
     }
   }
 } 

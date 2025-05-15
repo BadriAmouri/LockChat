@@ -3,7 +3,7 @@ import 'package:lockchat/views/widgets/header_backButton.dart';
 import 'security_settings.dart';
 import 'change_profile_picture_screen.dart';
 import 'package:lockchat/services/tokenStorage.dart';
-import 'package:lockchat/services/auth_service.dart';
+import 'package:lockchat/services/authService.dart';
 import 'login.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -20,6 +20,7 @@ class _SettingsPageState extends State<SettingsPage>
 
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -44,6 +45,7 @@ class _SettingsPageState extends State<SettingsPage>
   void dispose() {
     _usernameController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -71,27 +73,60 @@ class _SettingsPageState extends State<SettingsPage>
   }
 
   // Methods to handle field submissions
-  void _saveUsername() {
+  void _saveUsername() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement actual username update logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Username updated successfully')),
-      );
-      setState(() {
-        _showUsernameField = false;
-      });
+      final currentUsername = await TokenStorage().getUsername();
+      final newUsername = _usernameController.text.trim();
+      if (currentUsername == null || newUsername.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a new username.')),
+        );
+        return;
+      }
+      final result = await AuthService().updateUsername(currentUsername, newUsername);
+      if (result['success']) {
+        await TokenStorage().saveUsername(newUsername);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+        setState(() {
+          _showUsernameField = false;
+          _usernameController.clear();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Failed to update username')),
+        );
+      }
     }
   }
 
-  void _saveEmail() {
+  void _saveEmail() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement actual email update logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email updated successfully')),
-      );
-      setState(() {
-        _showEmailField = false;
-      });
+      final username = await TokenStorage().getUsername();
+      final newEmail = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+      if (username == null || newEmail.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all fields.')),
+        );
+        return;
+      }
+      final result = await AuthService().updateEmail(username, newEmail, password);
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'])),
+        );
+        setState(() {
+          _showEmailField = false;
+          _emailController.clear();
+          _passwordController.clear();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Failed to update email')),
+        );
+      }
     }
   }
 
@@ -389,6 +424,15 @@ class _SettingsPageState extends State<SettingsPage>
                                                   keyboardType:
                                                       TextInputType
                                                           .emailAddress,
+                                                ),
+                                                TextFormField(
+                                                  controller: _passwordController,
+                                                  decoration: const InputDecoration(
+                                                    hintText: 'Enter your password',
+                                                    border: OutlineInputBorder(),
+                                                  ),
+                                                  obscureText: true,
+                                                  validator: (value) => value == null || value.isEmpty ? 'Password required' : null,
                                                 ),
                                                 const SizedBox(height: 8),
                                                 ElevatedButton(
