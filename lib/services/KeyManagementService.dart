@@ -68,7 +68,6 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
         final Map<String, dynamic> responseBody = jsonDecode(storeKeyResponse.body);
         final String keyId = responseBody['insertedKeyId'];
 
-
         // 🔐 Save AES key locally
         await secureStorage.write(key: "aesKey_${senderId}_$recipientId", value: base64Encode(aesKey));
         await secureStorage.write(key: "keyId_${senderId}_$recipientId", value: keyId);
@@ -122,6 +121,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
 
               final ECPublicKey senderPublicKey = await retrievePublicKeyFromBackend(senderId);
               final ECPrivateKey senderPrivateKey = await retrievePrivateKey(sendername);
+
 
            /*    final Uint8List aesKey = decryptionService.decryptAESKeyForSender(
                 encryptedKey, senderPrivateKey, senderPublicKey,
@@ -232,4 +232,7 @@ Future<Map<String, dynamic>> rotateKeyIfNeeded(int senderId, int recipientId, St
     throw Exception("❌ Error while decoding public key: $e");
   }
 }
+
+
+
 }

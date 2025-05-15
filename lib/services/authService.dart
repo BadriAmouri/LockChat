@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class AuthService {
   // Replace with your actual API base URL
-  final String baseUrl = 'https://lock-chat-backend.vercel.app/auth';
+  final String baseUrl = 'http://10.80.4.151:5000/auth';
   
   // Login method
   Future<Map<String, dynamic>> login(String username, String password) async {
@@ -20,11 +20,8 @@ class AuthService {
       );
       
       final responseData = jsonDecode(response.body);
-      print("✅✅✅✅✅LOG IN CALLED✅✅✅✅");
-      print(responseData);
       
       if (response.statusCode == 200) {
-        // Store tokens securely (you should use flutter_secure_storage in production)
         return {
           'success': true,
           'accessToken': responseData['accessToken'],
@@ -104,6 +101,84 @@ class AuthService {
         'success': false,
         'error': 'Connection error: ${e.toString()}',
       };
+    }
+  }
+  
+  // Reset password method
+  Future<Map<String, dynamic>> resetPassword(String username, String oldPassword, String newPassword) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/resetPassword'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        }),
+      );
+      
+      final responseData = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': responseData['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Password reset failed',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Connection error: ${e.toString()}',
+      };
+    }
+  }
+  
+  // Update username method
+  Future<Map<String, dynamic>> updateUsername(String currentUsername, String newUsername) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/updateusername'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': currentUsername,
+          'newUsername': newUsername,
+        }),
+      );
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': responseData['message']};
+      } else {
+        return {'success': false, 'error': responseData['error'] ?? 'Failed to update username'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateEmail(String username, String newEmail, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/updateemail'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'newEmail': newEmail,
+          'password': password,
+        }),
+      );
+      final responseData = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': responseData['message']};
+      } else {
+        return {'success': false, 'error': responseData['error'] ?? 'Failed to update email'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
     }
   }
 }
